@@ -146,15 +146,20 @@ const EVENTS_CONFIG = {
   });
 
   // ── Video modal ──
+  // The standard modal mechanics (is-open class, focus restore, inert
+  // siblings, backdrop click, Escape) come from createModalAPI; the
+  // populate/cleanup hooks below handle the bits that ARE unique to
+  // video — creating/removing the YouTube iframe, and copying the role-
+  // card bio into the modal's side panel.
   const videoModal = document.getElementById('video-modal');
-  const videoModalFrame = videoModal ? videoModal.querySelector('.video-modal-frame') : null;
+  const videoModalFrame   = videoModal ? videoModal.querySelector('.video-modal-frame') : null;
   const videoModalDetails = videoModal ? videoModal.querySelector('.video-modal-details') : null;
-  const videoModalName = videoModal ? videoModal.querySelector('.video-modal-name') : null;
-  const videoModalBio = videoModal ? videoModal.querySelector('.video-modal-bio') : null;
-  let lastFocusedFacade = null;
+  const videoModalName    = videoModal ? videoModal.querySelector('.video-modal-name')    : null;
+  const videoModalBio     = videoModal ? videoModal.querySelector('.video-modal-bio')     : null;
 
-  function openVideoModal(id, title, invoker) {
-    if (!videoModal || !videoModalFrame) return;
+  function videoModalPopulate(id, title, invoker) {
+    if (!videoModalFrame) return;
+    // Replace any previous iframe with a fresh one (forces a clean YouTube load).
     const existing = videoModalFrame.querySelector('iframe');
     if (existing) existing.remove();
     const iframe = document.createElement('iframe');
@@ -165,13 +170,13 @@ const EVENTS_CONFIG = {
     iframe.setAttribute('allowfullscreen', '');
     videoModalFrame.appendChild(iframe);
 
+    // If the click came from a role-model card, clone its name + bio into
+    // the modal's side panel. Otherwise hide the side panel.
     const card = invoker ? invoker.closest('.role-card') : null;
     if (card && videoModalDetails && videoModalName && videoModalBio) {
       const nameEl = card.querySelector('.role-card-name');
-      const bioEl = card.querySelector('.role-card-bio');
+      const bioEl  = card.querySelector('.role-card-bio');
       videoModalName.textContent = nameEl ? nameEl.textContent : title;
-      // Deep-clone each child from the bio block into the modal.
-      // (Avoids using innerHTML; the bio's structure is preserved exactly.)
       videoModalBio.replaceChildren();
       if (bioEl) {
         Array.from(bioEl.childNodes).forEach(node => {
@@ -185,71 +190,34 @@ const EVENTS_CONFIG = {
       if (videoModalName) videoModalName.textContent = '';
       if (videoModalBio) videoModalBio.replaceChildren();
     }
-
-    setBodyInertExceptModal(true);
-    videoModal.classList.add('is-open');
-    videoModal.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
-    lastFocusedFacade = invoker || null;
-    const closeBtn = videoModal.querySelector('.video-modal-close');
-    if (closeBtn) closeBtn.focus();
   }
 
-  function closeVideoModal() {
-    if (!videoModal || !videoModalFrame) return;
-    if (!videoModal.classList.contains('is-open')) return;
+  function videoModalCleanup() {
+    if (!videoModalFrame) return;
     const iframe = videoModalFrame.querySelector('iframe');
-    if (iframe) iframe.remove();
+    if (iframe) iframe.remove();  // Stops the video + frees the network connection.
     if (videoModalDetails) {
       videoModalDetails.hidden = true;
       if (videoModalName) videoModalName.textContent = '';
       if (videoModalBio) videoModalBio.replaceChildren();
     }
-    videoModal.classList.remove('is-open');
-    videoModal.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = '';
-    setBodyInertExceptModal(false);
-    if (lastFocusedFacade && typeof lastFocusedFacade.focus === 'function') {
-      lastFocusedFacade.focus();
-    }
-    lastFocusedFacade = null;
   }
 
-  function setBodyInertExceptModal(on) {
-    const children = document.body.children;
-    for (let i = 0; i < children.length; i += 1) {
-      const el = children[i];
-      if (el === videoModal) continue;
-      if (on) {
-        el.setAttribute('inert', '');
-      } else {
-        el.removeAttribute('inert');
-      }
-    }
-  }
-
-  document.addEventListener('click', function (event) {
-    const facade = event.target.closest('.video-facade');
-    if (facade) {
-      event.preventDefault();
-      const id = facade.dataset.id;
-      if (!id) return;
-      openVideoModal(id, facade.dataset.title || '', facade);
-      return;
-    }
-    if (event.target.closest('.video-modal-close')) {
-      closeVideoModal();
-      return;
-    }
-    if (event.target === videoModal) {
-      closeVideoModal();
-    }
+  const videoModalAPI = createModalAPI(videoModal, {
+    populate: videoModalPopulate,
+    cleanup:  videoModalCleanup,
   });
 
-  document.addEventListener('keydown', function (event) {
-    if (event.key === 'Escape' && videoModal && videoModal.classList.contains('is-open')) {
-      closeVideoModal();
-    }
+  // Document-level click handler just spots .video-facade buttons and
+  // opens the modal — close-button click, backdrop click, and Escape are
+  // all handled inside createModalAPI.
+  document.addEventListener('click', function (event) {
+    const facade = event.target.closest('.video-facade');
+    if (!facade) return;
+    event.preventDefault();
+    const id = facade.dataset.id;
+    if (!id) return;
+    if (videoModalAPI) videoModalAPI.open(id, facade.dataset.title || '', facade);
   });
 }());
 
@@ -478,58 +446,24 @@ function buildCard(record, section, onCardClick) {
 
 /**
  * Wire up the org-detail modal once and return { open, close } handlers.
- * The modal element is expected in the HTML (see index.html).
+ * Open/close behaviour comes from createModalAPI; we just plug in a
+ * populate hook that fills the DOM from the record data.
  */
 function setupOrgModal() {
   const modal = document.getElementById('org-modal');
   if (!modal) return null;
-
   const els = {
-    modal,
-    title:    document.getElementById('org-modal-title'),
-    logo:     document.getElementById('org-modal-logo'),
-    contact:  document.getElementById('org-modal-contact'),
+    title:        document.getElementById('org-modal-title'),
+    logo:         document.getElementById('org-modal-logo'),
+    contact:      document.getElementById('org-modal-contact'),
     aboutSection: document.getElementById('org-modal-about-section'),
-    about:    document.getElementById('org-modal-about'),
-    catsSection: document.getElementById('org-modal-categories-section'),
-    categories:  document.getElementById('org-modal-categories'),
-    close:    modal.querySelector('.org-modal-close'),
+    about:        document.getElementById('org-modal-about'),
+    catsSection:  document.getElementById('org-modal-categories-section'),
+    categories:   document.getElementById('org-modal-categories'),
   };
-
-  let lastFocused = null;
-
-  function open(record, section) {
-    populateOrgModal(els, record, section);
-    setSiblingsInert(modal, true);
-    modal.classList.add('is-open');
-    modal.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
-    lastFocused = document.activeElement;
-    if (els.close) els.close.focus();
-  }
-
-  function close() {
-    if (!modal.classList.contains('is-open')) return;
-    modal.classList.remove('is-open');
-    modal.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = '';
-    setSiblingsInert(modal, false);
-    if (lastFocused && typeof lastFocused.focus === 'function') {
-      lastFocused.focus();
-    }
-    lastFocused = null;
-  }
-
-  if (els.close) els.close.addEventListener('click', close);
-  modal.addEventListener('click', event => {
-    // Click on the dim backdrop (not the white card itself) closes the modal.
-    if (event.target === modal) close();
+  return createModalAPI(modal, {
+    populate: (record, section) => populateOrgModal(els, record, section),
   });
-  document.addEventListener('keydown', event => {
-    if (event.key === 'Escape' && modal.classList.contains('is-open')) close();
-  });
-
-  return { open, close };
 }
 
 /** Populate the modal DOM from a record. Hides empty sections. */
@@ -791,6 +725,60 @@ function setSiblingsInert(exceptEl, on) {
     if (on) el.setAttribute('inert', '');
     else el.removeAttribute('inert');
   }
+}
+
+/**
+ * Create a standardised modal controller — the same open/close/focus/inert
+ * dance was previously repeated 4 times across the codebase.
+ *
+ * The returned API exposes `open(...args)` and `close()`. Args passed to
+ * `open` are forwarded to the `populate` hook (so callers can pass record
+ * data, event IDs, etc.). The `cleanup` hook fires inside `close()` for
+ * any teardown (removing iframes, clearing fields).
+ *
+ * Behaviours included automatically:
+ *   - toggles `.is-open` and `aria-hidden`
+ *   - sets `inert` on all body siblings while open (focus trap-lite)
+ *   - locks `<body>` scroll while open
+ *   - moves focus to the close button on open, restores prior focus on close
+ *   - dismiss handlers: × button, click on backdrop, Escape key
+ */
+function createModalAPI(modal, options) {
+  if (!modal) return null;
+  const opts = options || {};
+  const closeBtn = modal.querySelector(
+    opts.closeSelector || '.org-modal-close, .event-modal-close, .video-modal-close'
+  );
+  let lastFocused = null;
+
+  function open() {
+    if (opts.populate) opts.populate.apply(null, arguments);
+    setSiblingsInert(modal, true);
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    lastFocused = document.activeElement;
+    if (closeBtn && typeof closeBtn.focus === 'function') closeBtn.focus();
+  }
+
+  function close() {
+    if (!modal.classList.contains('is-open')) return;
+    if (opts.cleanup) opts.cleanup();
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    setSiblingsInert(modal, false);
+    if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
+    lastFocused = null;
+  }
+
+  if (closeBtn) closeBtn.addEventListener('click', close);
+  modal.addEventListener('click', e => { if (e.target === modal) close(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && modal.classList.contains('is-open')) close();
+  });
+
+  return { open, close, modal };
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -1540,7 +1528,6 @@ function setupEventDetailModal() {
   const modal = document.getElementById('event-detail-modal');
   if (!modal) return null;
   const els = {
-    modal,
     title:       document.getElementById('event-detail-modal-title'),
     posterWrap:  document.getElementById('event-detail-poster'),
     posterImg:   document.getElementById('event-detail-poster-img'),
@@ -1553,37 +1540,10 @@ function setupEventDetailModal() {
     detailsWrap: document.getElementById('event-detail-details-section'),
     details:     document.getElementById('event-detail-details'),
     empty:       document.getElementById('event-detail-empty'),
-    close:       modal.querySelector('.event-modal-close'),
   };
-
-  let lastFocused = null;
-
-  function open(record) {
-    populateEventDetail(els, record, EVENTS_CONFIG.fields);
-    setSiblingsInert(modal, true);
-    modal.classList.add('is-open');
-    modal.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
-    lastFocused = document.activeElement;
-    if (els.close) els.close.focus();
-  }
-  function close() {
-    if (!modal.classList.contains('is-open')) return;
-    modal.classList.remove('is-open');
-    modal.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = '';
-    setSiblingsInert(modal, false);
-    if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
-    lastFocused = null;
-  }
-
-  if (els.close) els.close.addEventListener('click', close);
-  modal.addEventListener('click', e => { if (e.target === modal) close(); });
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && modal.classList.contains('is-open')) close();
+  return createModalAPI(modal, {
+    populate: record => populateEventDetail(els, record, EVENTS_CONFIG.fields),
   });
-
-  return { open, close };
 }
 
 function populateEventDetail(els, record, fields) {
@@ -1642,44 +1602,24 @@ function setupDayEventsModal(onOpenEvent) {
   if (!modal) return null;
   const titleEl = document.getElementById('day-events-modal-title');
   const listEl  = document.getElementById('day-events-modal-list');
-  const closeBtn = modal.querySelector('.event-modal-close');
 
-  let lastFocused = null;
-
-  function open(date, events) {
-    titleEl.textContent = 'Events on ' + formatLongDate(date);
-    listEl.replaceChildren();
-    events.forEach(event => {
-      const card = buildDayEventsCard(event, EVENTS_CONFIG.fields, () => {
-        close();
-        onOpenEvent(event);
+  // We need `api.close()` inside the `populate` callback (cards must close
+  // the day-events modal before opening the event-detail modal). Declare
+  // `api` first so the closure picks it up at call time.
+  const api = createModalAPI(modal, {
+    populate: (date, events) => {
+      titleEl.textContent = 'Events on ' + formatLongDate(date);
+      listEl.replaceChildren();
+      events.forEach(event => {
+        const card = buildDayEventsCard(event, EVENTS_CONFIG.fields, () => {
+          api.close();
+          onOpenEvent(event);
+        });
+        listEl.appendChild(card);
       });
-      listEl.appendChild(card);
-    });
-    setSiblingsInert(modal, true);
-    modal.classList.add('is-open');
-    modal.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
-    lastFocused = document.activeElement;
-    if (closeBtn) closeBtn.focus();
-  }
-  function close() {
-    if (!modal.classList.contains('is-open')) return;
-    modal.classList.remove('is-open');
-    modal.setAttribute('aria-hidden', 'true');
-    document.body.style.overflow = '';
-    setSiblingsInert(modal, false);
-    if (lastFocused && typeof lastFocused.focus === 'function') lastFocused.focus();
-    lastFocused = null;
-  }
-
-  if (closeBtn) closeBtn.addEventListener('click', close);
-  modal.addEventListener('click', e => { if (e.target === modal) close(); });
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && modal.classList.contains('is-open')) close();
+    },
   });
-
-  return { open, close };
+  return api;
 }
 
 function buildDayEventsCard(event, fields, onClick) {

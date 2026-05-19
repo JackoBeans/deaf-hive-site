@@ -441,13 +441,6 @@ footer {
   }
 }
 
-/* BSL silhouette SVG */
-.bsl-person {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
 /* ── HERO ── */
 .hero-card {
   display: flex;
@@ -965,7 +958,12 @@ footer {
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.4);
 }
 
-.org-modal-close {
+/* Shared "close" button used by both the Organisation modal and the two
+   Event modals (day-events list + event-detail). Identical visual style —
+   one rule keeps them in lockstep. The Video modal's close button is
+   separate (white-on-black for the dim backdrop). */
+.org-modal-close,
+.event-modal-close {
   position: absolute;
   top: 16px;
   right: 16px;
@@ -985,13 +983,16 @@ footer {
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 .org-modal-close:hover,
-.org-modal-close:focus-visible {
+.org-modal-close:focus-visible,
+.event-modal-close:hover,
+.event-modal-close:focus-visible {
   background: var(--text);
   border-color: var(--text);
   color: var(--white);
   outline: none;
 }
-.org-modal-close:focus-visible {
+.org-modal-close:focus-visible,
+.event-modal-close:focus-visible {
   outline: 2px solid var(--yellow);
   outline-offset: 2px;
 }
@@ -1684,33 +1685,8 @@ footer {
   .event-modal-content--wide { width: min(1200px, 90vw); padding: 36px 36px 32px; }
 }
 
-.event-modal-close {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  background: transparent;
-  border: 1.5px solid rgba(28, 45, 96, 0.18);
-  border-radius: 999px;
-  color: var(--text);
-  font-size: 22px;
-  line-height: 1;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s, border-color 0.15s, color 0.15s;
-}
-.event-modal-close:hover,
-.event-modal-close:focus-visible {
-  background: var(--text);
-  border-color: var(--text);
-  color: var(--white);
-  outline: none;
-}
-.event-modal-close:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+/* (Event-modal close button styles live with .org-modal-close further up —
+   one shared rule for both modal close buttons.) */
 
 .event-modal-title {
   font-size: 1.3rem;

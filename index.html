@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DeafHive — a central online space for the Deaf community</title>
   <meta name="description" content="A central online space for the Deaf community, bringing together local events, BSL videos, services and support.">
-  <meta name="theme-color" content="#2852b7">
+  <meta name="theme-color" content="#2852b7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1f46aa" media="(prefers-color-scheme: dark)">
   <link rel="canonical" href="https://deafhive.online/">
 
   <!-- Open Graph / Twitter -->
@@ -24,26 +25,53 @@
   <meta name="twitter:description" content="A central online space for the Deaf community.">
   <meta name="twitter:image" content="https://deafhive.online/og.png">
 
-  <!-- Favicon: navy tile + yellow hexagon + 'D' (matches the brand hex motif) -->
+  <!-- Favicon + apple-touch-icon: navy tile + yellow hexagon + 'D' (matches the brand hex motif).
+       Inlined as a data: URI so there's no extra HTTP request. -->
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%232852b7'/%3E%3Cpolygon points='32,8 56,22 56,42 32,56 8,42 8,22' fill='%23f5c842'/%3E%3Ctext x='32' y='42' font-family='-apple-system,Arial,sans-serif' font-size='28' font-weight='900' fill='%232852b7' text-anchor='middle'%3ED%3C/text%3E%3C/svg%3E">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%232852b7'/%3E%3Cpolygon points='32,8 56,22 56,42 32,56 8,42 8,22' fill='%23f5c842'/%3E%3Ctext x='32' y='42' font-family='-apple-system,Arial,sans-serif' font-size='28' font-weight='900' fill='%232852b7' text-anchor='middle'%3ED%3C/text%3E%3C/svg%3E">
 
-  <!-- Structured data: helps search engines and AI tools understand the site -->
+  <!-- Structured data: helps search engines and AI tools understand the site.
+       Two linked entities: the Organization (DeafHive itself) and the WebSite
+       it publishes. Both declare British English and British Sign Language
+       (sgn-GB) so search engines surface this site for BSL-related queries. -->
   <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "DeafHive",
-    "url": "https://deafhive.online/",
-    "description": "A central online space for the Deaf community, bringing together local events, BSL videos, services and support.",
-    "inLanguage": "en-GB"
-  }
+  [
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "@id": "https://deafhive.online/#organization",
+      "name": "DeafHive",
+      "url": "https://deafhive.online/",
+      "description": "A central online space for the Deaf community, bringing together local events, BSL videos, services and support.",
+      "inLanguage": "en-GB",
+      "knowsLanguage": ["en-GB", "sgn-GB"]
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "@id": "https://deafhive.online/#website",
+      "url": "https://deafhive.online/",
+      "name": "DeafHive",
+      "description": "A central online space for the Deaf community.",
+      "inLanguage": "en-GB",
+      "publisher": { "@id": "https://deafhive.online/#organization" }
+    }
+  ]
   </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://i.ytimg.com">
   <link rel="preconnect" href="https://www.youtube-nocookie.com">
-  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800;900&amp;display=swap" rel="stylesheet">
+
+  <!-- Load Raleway asynchronously to avoid blocking first paint.
+       The `media="print"` trick keeps the request non-render-blocking; the
+       onload swap reapplies it to all media. <noscript> fallback restores
+       the synchronous load for users without JS. -->
+  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800;900&amp;display=swap" as="style" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800;900&amp;display=swap" media="print" onload="this.media='all'" crossorigin>
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800;900&amp;display=swap" crossorigin></noscript>
+
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="hex-bg">
@@ -131,7 +159,7 @@
       </div>
       <div class="vid-box hero-vid">
         <button class="video-facade" type="button" data-id="_raNeUTdE6Q" data-title="Welcome to DeafHive" aria-label="Play video: Welcome to DeafHive">
-          <img src="https://i.ytimg.com/vi/_raNeUTdE6Q/hqdefault.jpg" alt="" loading="lazy">
+          <img src="https://i.ytimg.com/vi/_raNeUTdE6Q/hqdefault.jpg" alt="" loading="lazy" width="480" height="360">
           <span class="video-facade-play" aria-hidden="true">
             <svg viewBox="0 0 68 48" aria-hidden="true"><use href="#yt-play"/></svg>
           </span>
@@ -145,7 +173,7 @@
       <div class="two-col">
         <div class="vid-box side-vid">
           <button class="video-facade" type="button" data-id="TAG5JM7zhTU" data-title="What is DeafHive?" aria-label="Play video: What is DeafHive?">
-            <img src="https://i.ytimg.com/vi/TAG5JM7zhTU/hqdefault.jpg" alt="" loading="lazy">
+            <img src="https://i.ytimg.com/vi/TAG5JM7zhTU/hqdefault.jpg" alt="" loading="lazy" width="480" height="360">
             <span class="video-facade-play" aria-hidden="true">
               <svg viewBox="0 0 68 48" aria-hidden="true"><use href="#yt-play"/></svg>
             </span>
@@ -167,7 +195,7 @@
       <div class="two-col">
         <div class="vid-box side-vid">
           <button class="video-facade" type="button" data-id="c29KSuD2iQc" data-title="Why we created DeafHive?" aria-label="Play video: Why we created DeafHive?">
-            <img src="https://i.ytimg.com/vi/c29KSuD2iQc/hqdefault.jpg" alt="" loading="lazy">
+            <img src="https://i.ytimg.com/vi/c29KSuD2iQc/hqdefault.jpg" alt="" loading="lazy" width="480" height="360">
             <span class="video-facade-play" aria-hidden="true">
               <svg viewBox="0 0 68 48" aria-hidden="true"><use href="#yt-play"/></svg>
             </span>
@@ -190,7 +218,7 @@
       <div class="two-col">
         <div class="vid-box side-vid">
           <button class="video-facade" type="button" data-id="IcThM_Jx8bY" data-title="What you will find on DeafHive?" aria-label="Play video: What you will find on DeafHive?">
-            <img src="https://i.ytimg.com/vi/IcThM_Jx8bY/hqdefault.jpg" alt="" loading="lazy">
+            <img src="https://i.ytimg.com/vi/IcThM_Jx8bY/hqdefault.jpg" alt="" loading="lazy" width="480" height="360">
             <span class="video-facade-play" aria-hidden="true">
               <svg viewBox="0 0 68 48" aria-hidden="true"><use href="#yt-play"/></svg>
             </span>
@@ -352,7 +380,7 @@
       <div class="role-models-vid">
         <div class="vid-box side-vid">
           <button class="video-facade" type="button" data-id="G2zSuR0IxWA" data-title="See It. Believe It. Be It." aria-label="Play video: See It. Believe It. Be It.">
-            <img src="https://i.ytimg.com/vi/G2zSuR0IxWA/hqdefault.jpg" alt="" loading="lazy">
+            <img src="https://i.ytimg.com/vi/G2zSuR0IxWA/hqdefault.jpg" alt="" loading="lazy" width="480" height="360">
             <span class="video-facade-play" aria-hidden="true">
               <svg viewBox="0 0 68 48" aria-hidden="true"><use href="#yt-play"/></svg>
             </span>
@@ -364,7 +392,7 @@
         <article class="role-card">
           <div class="vid-box role-card-thumb">
             <button class="video-facade" type="button" data-id="k6CsKt1l9dU" data-title="David" aria-label="Open David's story">
-              <img src="https://i.ytimg.com/vi/k6CsKt1l9dU/hqdefault.jpg" alt="" loading="lazy">
+              <img src="https://i.ytimg.com/vi/k6CsKt1l9dU/hqdefault.jpg" alt="" loading="lazy" width="480" height="360">
               <span class="video-facade-play" aria-hidden="true">
                 <svg viewBox="0 0 68 48" aria-hidden="true"><use href="#yt-play"/></svg>
               </span>
@@ -387,7 +415,7 @@
       <div class="two-col">
         <div class="vid-box side-vid">
           <button class="video-facade" type="button" data-id="rBCV5m3_C9U" data-title="Help Us Build DeafHive" aria-label="Play video: Help Us Build DeafHive">
-            <img src="https://i.ytimg.com/vi/rBCV5m3_C9U/hqdefault.jpg" alt="" loading="lazy">
+            <img src="https://i.ytimg.com/vi/rBCV5m3_C9U/hqdefault.jpg" alt="" loading="lazy" width="480" height="360">
             <span class="video-facade-play" aria-hidden="true">
               <svg viewBox="0 0 68 48" aria-hidden="true"><use href="#yt-play"/></svg>
             </span>
