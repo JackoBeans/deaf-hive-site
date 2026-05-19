@@ -1,0 +1,10 @@
+# Cloudflare Worker configuration.
+# After `wrangler deploy`, the printed URL goes into ../app.js as WORKER_URL.
+
+name = "directory-proxy"          # TODO confirm/rename — becomes <name>.<your-subdomain>.workers.dev
+main = "src/index.js"
+compatibility_date = "2026-05-19"
+
+# Secrets are set with `wrangler secret put` (see worker/README.md), not in this file:
+#   AIRTABLE_TOKEN  — Airtable Personal Access Token, read-only, scoped to the DeafHive Database base
+#   PURGE_SECRET    — random string shared with the Airtable purge automation

@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DeafHive — a central online space for the Deaf community</title>
+  <meta name="description" content="A central online space for the Deaf community, bringing together local events, BSL videos, services and support.">
+  <meta name="theme-color" content="#2852b7">
+  <link rel="canonical" href="https://deafhive.online/">
+
+  <!-- Open Graph / Twitter -->
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="DeafHive">
+  <meta property="og:title" content="DeafHive — a central online space for the Deaf community">
+  <meta property="og:description" content="A central online space for the Deaf community, bringing together local events, BSL videos, services and support.">
+  <meta property="og:url" content="https://deafhive.online/">
+  <meta property="og:locale" content="en_GB">
+  <meta property="og:image" content="https://deafhive.online/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="DeafHive — a central online space for the Deaf community">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="DeafHive">
+  <meta name="twitter:description" content="A central online space for the Deaf community.">
+  <meta name="twitter:image" content="https://deafhive.online/og.png">
+
+  <!-- Favicon: navy tile + yellow hexagon + 'D' (matches the brand hex motif) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%232852b7'/%3E%3Cpolygon points='32,8 56,22 56,42 32,56 8,42 8,22' fill='%23f5c842'/%3E%3Ctext x='32' y='42' font-family='-apple-system,Arial,sans-serif' font-size='28' font-weight='900' fill='%232852b7' text-anchor='middle'%3ED%3C/text%3E%3C/svg%3E">
+
+  <!-- Structured data: helps search engines and AI tools understand the site -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "DeafHive",
+    "url": "https://deafhive.online/",
+    "description": "A central online space for the Deaf community, bringing together local events, BSL videos, services and support.",
+    "inLanguage": "en-GB"
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://i.ytimg.com">
+  <link rel="preconnect" href="https://www.youtube-nocookie.com">
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800;900&amp;display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="hex-bg">
+  <a class="skip-link" href="#about" data-scroll-target="#about">Skip to content</a>
+
+  <!-- Hex background: a single inline SVG pattern, tiled by the browser -->
+  <div id="hex-layer" aria-hidden="true">
+    <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="hex-pattern" width="59" height="102" patternUnits="userSpaceOnUse">
+          <polygon points="29.5,-17 58.95,0 58.95,34 29.5,51 0.05,34 0.05,0"/>
+          <polygon points="0,34 29.45,51 29.45,85 0,102 -29.45,85 -29.45,51"/>
+          <polygon points="59,34 88.45,51 88.45,85 59,102 29.55,85 29.55,51"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#hex-pattern)"/>
+    </svg>
+  </div>
+
+  <!-- Reusable inline SVG icon library.
+       The yt-play symbol drives the YouTube facade buttons; the rest
+       (Lucide icon paths, MIT-licensed) power the Events block. All
+       <symbol>s render via <svg><use href="#name"/></svg>. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs>
+      <symbol id="yt-play" viewBox="0 0 68 48">
+        <path d="M66.52 7.74c-.78-2.93-2.49-5.41-5.42-6.19C55.79.13 34 0 34 0S12.21.13 6.9 1.55c-2.93.78-4.63 3.26-5.42 6.19C.06 13.05 0 24 0 24s.06 10.95 1.48 16.26c.78 2.93 2.49 5.41 5.42 6.19C12.21 47.87 34 48 34 48s21.79-.13 27.1-1.55c2.93-.78 4.64-3.26 5.42-6.19C67.94 34.95 68 24 68 24s-.06-10.95-1.48-16.26z" fill="var(--yt-play-bg, #212121)" opacity="var(--yt-play-bg-opacity, 0.85)"/>
+        <path d="M27 34V14l18 10-18 10z" fill="#fff"/>
+      </symbol>
+      <!-- Lucide icons, 24×24 stroked. Use currentColor so CSS can recolour. -->
+      <symbol id="icon-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>
+        <path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/>
+        <path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/>
+      </symbol>
+      <symbol id="icon-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m15 18-6-6 6-6"/>
+      </symbol>
+      <symbol id="icon-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="m9 18 6-6-6-6"/>
+      </symbol>
+      <symbol id="icon-map-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/>
+        <circle cx="12" cy="10" r="3"/>
+      </symbol>
+      <symbol id="icon-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+      </symbol>
+      <symbol id="icon-x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
+      </symbol>
+    </defs>
+  </svg>
+
+  <!-- NAV -->
+  <nav id="site-nav">
+    <a class="logo" href="#about" data-scroll-target="#about">DeafHive</a>
+    <button class="nav-toggle" id="nav-toggle" type="button" aria-expanded="false" aria-controls="site-menu" aria-label="Open navigation menu">
+      <span class="nav-toggle-icon" aria-hidden="true">
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+        <span class="nav-toggle-bar"></span>
+      </span>
+    </button>
+    <ul class="nav-links" id="site-menu">
+      <li><a href="#about" data-scroll-target="#about">About</a></li>
+      <li><a href="#directory-embed" data-scroll-target="#directory-embed">Directory</a></li>
+      <li><a href="#events" data-scroll-target="#events">Events</a></li>
+      <li><a href="#role-models" data-scroll-target="#role-models">Role Models</a></li>
+    </ul>
+  </nav>
+
+  <div class="page-wrap">
+
+    <!-- HERO -->
+    <div class="card hero-card" id="about">
+      <div class="hero-text">
+        <h1>Welcome to<br>DeafHive</h1>
+        <p class="tagline">Information. Inspiration. Inclusion</p>
+        <p>A central online space for the Deaf community, bringing together everything from local events to life-changing support.</p>
+        <div class="hero-btns">
+          <a href="#directory-embed" data-scroll-target="#directory-embed" class="btn-yellow">Explore DeafHive</a>
+          <a href="#help-us-build" data-scroll-target="#help-us-build" class="btn-outline">Get Involved</a>
+        </div>
+      </div>
+      <div class="vid-box hero-vid">
+        <button class="video-facade" type="button" data-id="_raNeUTdE6Q" data-title="Welcome to DeafHive" aria-label="Play video: Welcome to DeafHive">
+          <img src="https://i.ytimg.com/vi/_raNeUTdE6Q/hqdefault.jpg" alt="" loading="lazy">
+          <span class="video-facade-play" aria-hidden="true">
+            <svg viewBox="0 0 68 48" aria-hidden="true"><use href="#yt-play"/></svg>
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- WHAT IS DEAFHIVE -->
+    <div class="card">
+      <h2 class="sec-title mb-24">What is DeafHive?</h2>
+      <div class="two-col">
+        <div class="vid-box side-vid">
+          <button class="video-facade" type="button" data-id="TAG5JM7zhTU" data-title="What is DeafHive?" aria-label="Play video: What is DeafHive?">
+            <img src="https://i.ytimg.com/vi/TAG5JM7zhTU/hqdefault.jpg" alt="" loading="lazy">
+            <span class="video-facade-play" aria-hidden="true">
+              <svg viewBox="0 0 68 48" aria-hidden="true"><use href="#yt-play"/></svg>
+            </span>
+          </button>
+        </div>
+        <div class="col-text">
+          <ul class="bullet-list">
+            <li>A place to connect</li>
+            <li>A place to learn</li>
+            <li>A place to belong</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHY WE CREATED -->
+    <div class="card">
+      <h2 class="sec-title mb-24">Why We Created DeafHive?</h2>
+      <div class="two-col">
+        <div class="vid-box side-vid">
+          <button class="video-facade" type="button" data-id="c29KSuD2iQc" data-title="Why we created DeafHive?" aria-label="Play video: Why we created DeafHive?">
+            <img src="https://i.ytimg.com/vi/c29KSuD2iQc/hqdefault.jpg" alt="" loading="lazy">
+            <span class="video-facade-play" aria-hidden="true">
+              <svg viewBox="0 0 68 48" aria-hidden="true"><use href="#yt-play"/></svg>
+            </span>
+          </button>
+        </div>
+        <div class="col-text">
+          <p class="sec-sub mb-16">Having access is important, but feeling part of the deaf community matters too.</p>
+          <ul class="bullet-list">
+            <li>Many events have interpreters booked, but deaf people don't always attend because they did not know about the event.</li>
+            <li>Finding BSL-friendly services, courses, and community groups can be difficult and time-consuming.</li>
+            <li>Deaf role models and success stories are rarely visible — we want to change that.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHAT YOU WILL FIND -->
+    <div class="card" id="directory">
+      <h2 class="sec-title mb-24">What You Will Find on DeafHive</h2>
+      <div class="two-col">
+        <div class="vid-box side-vid">
+          <button class="video-facade" type="button" data-id="IcThM_Jx8bY" data-title="What you will find on DeafHive?" aria-label="Play video: What you will find on DeafHive?">
+            <img src="https://i.ytimg.com/vi/IcThM_Jx8bY/hqdefault.jpg" alt="" loading="lazy">
+            <span class="video-facade-play" aria-hidden="true">
+              <svg viewBox="0 0 68 48" aria-hidden="true"><use href="#yt-play"/></svg>
+            </span>
+          </button>
+        </div>
+        <div class="col-text">
+          <div class="find-grid find-grid--stacked">
+            <div class="find-item">
+              <span><strong>Community &amp; Support</strong> – Find deaf groups, local and online events, and activities.</span>
+            </div>
+            <div class="find-item">
+              <span><strong>Learning &amp; Careers</strong> – Discover training, education and job opportunities.</span>
+            </div>
+            <div class="find-item">
+              <span><strong>Stories and BSL</strong> – Read and watch stories from the Deaf community and stay informed about Deaf issues.</span>
+            </div>
+            <div class="find-item">
+              <span><strong>Services and Help</strong> – Find important services and support for the Deaf community.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- COMMUNITY DIRECTORY (Airtable-driven) -->
+    <!-- Replaces the previous Softr iframe. JS in app.js fetches from the
+         Worker, builds the search + chip filters, renders the card grid,
+         and opens a detail modal on card click. -->
+    <div class="card" id="directory-embed">
+      <h2 class="sec-title mb-24">DeafHive Community Directory</h2>
+      <section class="airtable-section" data-source="organisations" aria-busy="true">
+        <input
+          type="search"
+          class="airtable-search"
+          id="organisations-search"
+          placeholder="Search organisations…"
+          aria-label="Search organisations"
+          autocomplete="off"
+          hidden>
+        <div class="airtable-filters" id="organisations-filters" aria-label="Filter organisations" hidden></div>
+        <p class="airtable-count" id="organisations-count" hidden aria-live="polite"></p>
+        <div class="airtable-grid" id="organisations-list">
+          <p class="airtable-status">Loading organisations…</p>
+        </div>
+      </section>
+    </div>
+
+  </div><!-- /page-wrap -->
+
+  <!-- BSL EVENTS ARCHIVE (Airtable-driven) -->
+  <!-- Replaces the previous Softr iframe. Three views (agenda/week/month),
+       search + time + organisation filters, day-events and event-detail
+       modals. JS in app.js drives everything — this is the static shell. -->
+  <div class="archive-section">
+    <div class="card events-card" id="events">
+      <h2 class="sec-title mb-24">BSL Events &amp; Community Video Archive</h2>
+
+      <!-- Status placeholder shown until JS replaces it (loading / not-configured / error). -->
+      <p class="airtable-status" id="events-status">Loading events…</p>
+
+      <!-- Whole interactive block — hidden until data has loaded successfully. -->
+      <div class="event-block" id="event-block" hidden>
+
+        <!-- ─ Filter bar (dark navy gradient) ─ -->
+        <div class="event-filter-bar" id="event-filter-bar">
+          <div class="event-view-row">
+            <div class="event-view-toggle" role="group" aria-label="Calendar view">
+              <button type="button" class="event-chip" data-view="agenda" aria-pressed="false">Agenda</button>
+              <button type="button" class="event-chip" data-view="week"   aria-pressed="false">Week</button>
+              <button type="button" class="event-chip is-active" data-view="month" aria-pressed="true">Month</button>
+            </div>
+            <button type="button" class="event-clear" id="event-clear" hidden>
+              <svg class="icon" aria-hidden="true"><use href="#icon-x"/></svg>
+              Clear
+            </button>
+          </div>
+
+          <div class="event-search-row">
+            <div class="event-search">
+              <svg class="icon event-search-icon" aria-hidden="true"><use href="#icon-search"/></svg>
+              <input
+                type="search"
+                id="event-search"
+                class="event-search-input"
+                placeholder="Search events…"
+                aria-label="Search events"
+                autocomplete="off">
+            </div>
+
+            <div class="event-dropdowns">
+              <!-- Time dropdown (Upcoming / Past / All) -->
+              <div class="event-dropdown" id="event-time-dropdown">
+                <button type="button" class="event-dropdown-btn" id="event-time-btn" aria-expanded="false" aria-controls="event-time-menu">
+                  <span id="event-time-label">Time</span>
+                  <span class="event-dropdown-icon" aria-hidden="true">+</span>
+                </button>
+                <div class="event-dropdown-menu" id="event-time-menu" role="group" aria-label="Time filter" hidden>
+                  <button type="button" class="event-chip is-active" data-time="upcoming" aria-pressed="true">Upcoming</button>
+                  <button type="button" class="event-chip" data-time="past" aria-pressed="false">Past</button>
+                  <button type="button" class="event-chip" data-time="all"  aria-pressed="false">All</button>
+                </div>
+              </div>
+
+              <!-- Organisation dropdown (multi-select, populated from data) -->
+              <div class="event-dropdown" id="event-org-dropdown">
+                <button type="button" class="event-dropdown-btn" id="event-org-btn" aria-expanded="false" aria-controls="event-org-menu">
+                  <span id="event-org-label">Organisation</span>
+                  <span class="event-dropdown-icon" aria-hidden="true">+</span>
+                </button>
+                <div class="event-dropdown-menu" id="event-org-menu" role="group" aria-label="Organisation filter" hidden></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ─ Body: active-filters bar OR plain count, then date nav, then view ─ -->
+        <div class="event-body">
+          <!-- Shown when any filter is active (search, time≠Upcoming, or any orgs picked). -->
+          <div class="event-active-filters" id="event-active-filters" hidden>
+            <div class="event-active-filters-head">
+              <p class="event-active-filters-label">Active Filters</p>
+              <span class="event-active-filters-count" id="event-active-count" aria-live="polite"></span>
+            </div>
+            <div class="event-active-filters-pills" id="event-active-pills"></div>
+          </div>
+          <!-- Shown when no filters are active. -->
+          <div class="event-count" id="event-count" aria-live="polite"></div>
+
+          <!-- Date navigation (Prev / range label / Next, plus Today). -->
+          <div class="event-date-nav">
+            <div class="event-date-nav-group">
+              <button type="button" class="event-nav-btn" id="event-prev" aria-label="Previous">
+                <svg class="icon" aria-hidden="true"><use href="#icon-chevron-left"/></svg>
+              </button>
+              <span class="event-range-label" id="event-range-label" aria-live="polite"></span>
+              <button type="button" class="event-nav-btn" id="event-next" aria-label="Next">
+                <svg class="icon" aria-hidden="true"><use href="#icon-chevron-right"/></svg>
+              </button>
+            </div>
+            <button type="button" class="event-today-btn" id="event-today">Today</button>
+          </div>
+
+          <!-- Active view (agenda/week/month) renders into here. -->
+          <div class="event-view" id="event-view"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-wrap page-wrap--flush-top">
+
+    <!-- ROLE MODELS -->
+    <div class="card" id="role-models">
+      <h2 class="sec-title-center">See It. Believe It. Be It.</h2>
+      <p class="sec-sub-center font-bold mb-8">Celebrating Deaf role models</p>
+      <p class="sec-sub-center mb-6">DeafHive shares stories of Deaf people making a difference, including teachers, artists, business owners and community leaders.</p>
+      <p class="sec-sub-center">Explore interviews, career journeys, and personal stories in BSL.</p>
+
+      <div class="role-models-vid">
+        <div class="vid-box side-vid">
+          <button class="video-facade" type="button" data-id="G2zSuR0IxWA" data-title="See It. Believe It. Be It." aria-label="Play video: See It. Believe It. Be It.">
+            <img src="https://i.ytimg.com/vi/G2zSuR0IxWA/hqdefault.jpg" alt="" loading="lazy">
+            <span class="video-facade-play" aria-hidden="true">
+              <svg viewBox="0 0 68 48" aria-hidden="true"><use href="#yt-play"/></svg>
+            </span>
+          </button>
+        </div>
+      </div>
+
+      <div class="role-models-people">
+        <article class="role-card">
+          <div class="vid-box role-card-thumb">
+            <button class="video-facade" type="button" data-id="k6CsKt1l9dU" data-title="David" aria-label="Open David's story">
+              <img src="https://i.ytimg.com/vi/k6CsKt1l9dU/hqdefault.jpg" alt="" loading="lazy">
+              <span class="video-facade-play" aria-hidden="true">
+                <svg viewBox="0 0 68 48" aria-hidden="true"><use href="#yt-play"/></svg>
+              </span>
+            </button>
+          </div>
+          <div class="role-card-body">
+            <h3 class="role-card-name">David</h3>
+            <p>He can dance, he can act, and he&rsquo;s the translator for our BSL and subtitled accessible version.</p>
+          </div>
+          <div class="role-card-bio" hidden>
+            <p>He can dance, he can act, and he&rsquo;s the translator for our BSL and subtitled accessible version.</p>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <!-- HELP US BUILD -->
+    <div class="card" id="help-us-build">
+      <h2 class="sec-title mb-24">Help Us Build DeafHive</h2>
+      <div class="two-col">
+        <div class="vid-box side-vid">
+          <button class="video-facade" type="button" data-id="rBCV5m3_C9U" data-title="Help Us Build DeafHive" aria-label="Play video: Help Us Build DeafHive">
+            <img src="https://i.ytimg.com/vi/rBCV5m3_C9U/hqdefault.jpg" alt="" loading="lazy">
+            <span class="video-facade-play" aria-hidden="true">
+              <svg viewBox="0 0 68 48" aria-hidden="true"><use href="#yt-play"/></svg>
+            </span>
+          </button>
+        </div>
+        <div class="col-text">
+          <p class="sec-sub mb-6">Your story, idea, or resource could help someone like you.</p>
+          <p class="sec-sub mb-18">We are making DeafHive together, and we want your input. Whether you are an event organiser, interpreter, BSL video creator, service provider or just someone who cares, let's work together.</p>
+          <ul class="bullet-list">
+            <li><strong>Submit a Resource</strong> – Share guides, links or helpful tools.</li>
+            <li><strong>Share a Video Story</strong> – Tell your story or show your work in BSL.</li>
+            <li><strong>Partner with Us</strong> – Join as a community or organisational partner.</li>
+            <li><strong>Donate or Sponsor</strong> – Support DeafHive and the Deaf community.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /page-wrap -->
+
+  <!-- ORGANISATION DETAIL MODAL -->
+  <!-- Opened by JS when an organisation card is clicked. Populated with
+       the record's logo, About markdown, Visit Website / Contact by Email
+       buttons, and Categories chips. -->
+  <div id="org-modal" class="org-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="org-modal-title">
+    <div class="org-modal-content">
+      <button class="org-modal-close" type="button" aria-label="Close">&times;</button>
+      <h3 id="org-modal-title" class="org-modal-title"></h3>
+      <div class="org-modal-grid">
+        <div class="org-modal-left">
+          <div class="org-modal-logo-box" id="org-modal-logo"></div>
+          <div class="org-modal-contact-box" id="org-modal-contact" hidden></div>
+        </div>
+        <div class="org-modal-right">
+          <section class="org-modal-section" id="org-modal-about-section" hidden>
+            <h4>About</h4>
+            <div class="org-modal-about" id="org-modal-about"></div>
+          </section>
+          <section class="org-modal-section" id="org-modal-categories-section" hidden>
+            <h4>Categories</h4>
+            <div class="org-modal-categories" id="org-modal-categories"></div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DAY-EVENTS MODAL -->
+  <!-- Opens when a day cell with more than 1 event is clicked in the
+       week/month view. Lists every event on that day; clicking one closes
+       this modal and opens the event-detail modal. -->
+  <div id="day-events-modal" class="event-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="day-events-modal-title">
+    <div class="event-modal-content">
+      <button class="event-modal-close" type="button" aria-label="Close">&times;</button>
+      <h3 id="day-events-modal-title" class="event-modal-title"></h3>
+      <div class="event-modal-day-list" id="day-events-modal-list"></div>
+    </div>
+  </div>
+
+  <!-- EVENT-DETAIL MODAL -->
+  <!-- Opens when a single event is clicked (from agenda, week pill, month
+       pill, or the day-events modal). Two-column layout: date/time card and
+       org/address meta on the left, full event details on the right. -->
+  <div id="event-detail-modal" class="event-modal event-modal--detail" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="event-detail-modal-title">
+    <div class="event-modal-content event-modal-content--wide">
+      <button class="event-modal-close" type="button" aria-label="Close">&times;</button>
+      <h3 id="event-detail-modal-title" class="event-modal-title"></h3>
+      <div class="event-detail-grid">
+        <div class="event-detail-left">
+          <!-- Event poster/picture — hidden when the record has no attachment -->
+          <div class="event-detail-poster" id="event-detail-poster" hidden>
+            <img id="event-detail-poster-img" alt="">
+          </div>
+          <div class="event-detail-datetime">
+            <div class="event-detail-card">
+              <div class="event-detail-card-head">
+                <svg class="icon" aria-hidden="true"><use href="#icon-calendar"/></svg>
+                <h4>Date &amp; Time</h4>
+              </div>
+              <p class="event-detail-date" id="event-detail-date"></p>
+              <p class="event-detail-time" id="event-detail-time"></p>
+            </div>
+          </div>
+          <div class="event-detail-meta">
+            <div class="event-detail-meta-org" id="event-detail-org" hidden>
+              <h4>Organisation</h4>
+              <div class="event-detail-org-badges" id="event-detail-org-badges"></div>
+            </div>
+            <div class="event-detail-meta-address" id="event-detail-address" hidden>
+              <svg class="icon event-detail-address-icon" aria-hidden="true"><use href="#icon-map-pin"/></svg>
+              <span id="event-detail-address-text"></span>
+            </div>
+          </div>
+        </div>
+        <div class="event-detail-right">
+          <div class="event-detail-details-section" id="event-detail-details-section" hidden>
+            <h4>Event Details</h4>
+            <div class="event-detail-details" id="event-detail-details"></div>
+          </div>
+          <div class="event-detail-empty" id="event-detail-empty" hidden>
+            No event details provided.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- VIDEO MODAL -->
+  <div id="video-modal" class="video-modal" role="dialog" aria-modal="true" aria-hidden="true" aria-label="Video player">
+    <div class="video-modal-content">
+      <button class="video-modal-close" type="button" aria-label="Close video">&times;</button>
+      <div class="video-modal-frame"></div>
+      <div class="video-modal-details" hidden>
+        <h3 class="video-modal-name"></h3>
+        <div class="video-modal-bio"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <p class="footer-tagline">Everything on DeafHive is built with YOU.</p>
+    <p class="footer-meta">© 2026 DeafHive</p>
+  </footer>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
