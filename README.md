@@ -97,19 +97,30 @@ If it doesn't:
 
 ---
 
+## Further documentation
+
+- [`docs/DATA_DICTIONARY.md`](docs/DATA_DICTIONARY.md) — field-by-field map of every Airtable column to where it surfaces on the site, plus what's admin-only.
+- [`docs/ADMIN_HANDBOOK.md`](docs/ADMIN_HANDBOOK.md) — for non-developers maintaining content: adding/editing/approving records, attaching media, troubleshooting, secret rotation, handover.
+- [`worker/README.md`](worker/README.md) — Cloudflare Worker setup, secrets, deploys, tailing logs.
+
 ## Repo layout
 
 ```
 deafhive-site/
-├── README.md          ← this file
-├── CNAME              ← deafhive.online (GitHub Pages custom domain)
+├── README.md            ← this file (developer + ops entry point)
+├── CNAME                ← deafhive.online (GitHub Pages custom domain)
+├── robots.txt           ← search-engine directives + sitemap reference
+├── sitemap.xml          ← canonical URL list
 ├── index.html
 ├── style.css
-├── app.js             ← WORKER_URL + per-section field config lives here
+├── app.js               ← WORKER_URL + per-section field config lives here
+├── docs/
+│   ├── DATA_DICTIONARY.md  ← Airtable field map
+│   └── ADMIN_HANDBOOK.md   ← editor / content-admin guide
 └── worker/
     ├── wrangler.toml
-    ├── src/index.js   ← Worker code; constants at the top
-    └── README.md      ← Worker setup detail
+    ├── src/index.js     ← Worker code; constants at the top
+    └── README.md        ← Worker setup detail
 ```
 
 ## Making changes later
