@@ -906,12 +906,48 @@ footer {
   max-height: 100%;
   object-fit: contain;
 }
+/* Empty-logo fallback: a white container hosting the .monogram circle. */
 .airtable-card-logo--empty {
-  background: linear-gradient(135deg, #f5f7fc 0%, #e6edf8 100%);
+  background: var(--white);
+}
+
+/* Initials badge — sits inside .airtable-card-logo (card) or
+   .org-modal-logo-box (modal). Sizes itself relative to its parent so
+   the same markup works in both. */
+.airtable-card-logo .monogram,
+.org-modal-logo-box .monogram {
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 3px solid var(--text);
+  background: var(--white);
   color: var(--text);
-  font-size: 2.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: 0.04em;
+  transition: transform 0.15s ease;
+}
+.airtable-card-logo .monogram {
+  width: 78%;
+  max-width: 140px;
+  font-size: 1.45rem;
+}
+.airtable-card:hover .monogram { transform: scale(1.05); }
+.airtable-card:focus-visible .monogram { transform: scale(1.05); }
+
+.org-modal-logo-box .monogram {
+  width: 70%;
+  max-width: 220px;
+  border-width: 4px;
+  font-size: 2.4rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .airtable-card-logo .monogram,
+  .org-modal-logo-box .monogram { transition: none; }
+  .airtable-card:hover .monogram,
+  .airtable-card:focus-visible .monogram { transform: none; }
 }
 
 .airtable-card-name {
@@ -1032,11 +1068,11 @@ footer {
   max-height: 100%;
   object-fit: contain;
 }
+/* Empty-logo fallback for the modal: same .monogram circle, just sized
+   larger (rules live alongside the card .monogram in the AIRTABLE-DRIVEN
+   SECTIONS block above). */
 .org-modal-logo-box--empty {
-  background: linear-gradient(135deg, #f5f7fc 0%, #e6edf8 100%);
-  color: var(--text);
-  font-size: 3rem;
-  font-weight: 800;
+  background: var(--white);
 }
 
 .org-modal-contact-box {

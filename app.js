@@ -426,8 +426,13 @@ function buildCard(record, section, onCardClick) {
     img.loading = 'lazy';
     logoEl.appendChild(img);
   } else {
+    // Fallback: a navy-bordered white circle with up to 3 initials.
     logoEl.classList.add('airtable-card-logo--empty');
-    logoEl.textContent = (title.charAt(0) || '?').toUpperCase();
+    const monogram = document.createElement('span');
+    monogram.className = 'monogram';
+    monogram.textContent = getInitials(title);
+    monogram.setAttribute('aria-hidden', 'true'); // card already has aria-label with the full name
+    logoEl.appendChild(monogram);
   }
   card.appendChild(logoEl);
 
@@ -485,8 +490,13 @@ function populateOrgModal(els, record, section) {
       img.alt = '';
       els.logo.appendChild(img);
     } else {
+      // Same monogram fallback as the card, scaled up for the modal box.
       els.logo.classList.add('org-modal-logo-box--empty');
-      els.logo.textContent = (title.charAt(0) || '?').toUpperCase();
+      const monogram = document.createElement('span');
+      monogram.className = 'monogram';
+      monogram.textContent = getInitials(title);
+      monogram.setAttribute('aria-hidden', 'true'); // modal title carries the org name
+      els.logo.appendChild(monogram);
     }
   }
 
@@ -711,6 +721,18 @@ function safeEmail(value) {
   if (!v.includes('@')) return null;
   if (/\s/.test(v)) return null;
   return v;
+}
+
+/**
+ * Initials for the empty-logo monogram. Up to three first letters from
+ * the first three non-empty words. "British Deaf Association" → "BDA".
+ * Falls back to "?" for blank/missing names.
+ */
+function getInitials(name) {
+  if (!name || typeof name !== 'string') return '?';
+  const words = name.trim().split(/\s+/).filter(w => w.length > 0);
+  if (words.length === 0) return '?';
+  return words.slice(0, 3).map(w => w[0].toUpperCase()).join('');
 }
 
 /**
