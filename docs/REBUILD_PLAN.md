@@ -650,14 +650,64 @@ For transparency:
 
 ---
 
-## Open questions to resolve before Phase 1
+## Decisions locked in
 
-1. **Custom domain for R2** — confirm `images.deafhive.online` is acceptable. Alternative: serve images directly from `*.r2.cloudflarestorage.com` (uglier URLs, same performance).
-2. **Admin URL** — `deafhive.online/admin/` (same-origin, simplest) or `admin.deafhive.online` (subdomain, slightly cleaner separation)?
-3. **Submission URL** — same question: `deafhive.online/submit/` or `submit.deafhive.online`?
-4. **Submission notification** — should approving an admin email them when a public submission lands, or do you check the queue on a schedule? (Affects whether we need an email-sending Worker.)
-5. **Vocabulary management** — is the current Category Type list (Career / Community / Education / Health / etc.) frozen, or do you want admins to be able to add new values? (Affects whether we add a `vocabularies` table.)
-6. **Migration timing** — when's a good day for the cutover? Aim for a low-traffic window (Sunday morning UK time tends to be quietest).
-7. **Backup cadence** — D1 doesn't auto-backup on the free tier. Acceptable to script a weekly export to a separate file? Or pay $5/mo for Cloudflare's hosted backups?
+| Question | Decision |
+|---|---|
+| R2 custom domain | `media.deafhive.online` |
+| Admin URL | `deafhive.online/admin/` (same-origin) |
+| Submission URL | `deafhive.online/submit/` (same-origin) |
+| Submission notifications | Yes — auto-email on each new public submission |
+| Email sender | Resend (basic mode — no domain verification) |
+| From address | `onboarding@resend.dev` |
+| To address(es) | `mail@signingworks.co.uk` (single recipient to start; Worker secret holds a comma-separated list for fan-out later) |
+| Vocabulary management | Admins can add new Category Type / Age Category values (adds a `vocabularies` table) |
+| Migration timing | Late-night low-traffic window (Sunday UK time) |
+| Backup cadence | Scripted weekly export (cron Worker or local script) |
 
-Answer those, and Phase 0 can start the same day.
+### Schema addendum: `vocabularies` table
+
+```sql
+CREATE TABLE vocabularies (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  kind       TEXT NOT NULL,    -- 'category_type' | 'age_category'
+  value      TEXT NOT NULL,    -- e.g. 'Community'
+  sort_order INTEGER NOT NULL DEFAULT 100,
+  created_at INTEGER NOT NULL,
+  UNIQUE (kind, value)
+);
+```
+
+Admin UI gets a small "Manage vocabularies" panel inside Settings — add/remove values, drag to reorder. Submitting orgs/events pick from the live list rather than a hardcoded set.
+
+### Resend integration
+
+Worker dependency: `fetch` POST to `https://api.resend.com/emails` with `Authorization: Bearer <RESEND_API_KEY>`. No SDK needed.
+
+```js
+async function notifySubmission(env, { type, id, name }) {
+  const to = env.NOTIFY_RECIPIENTS.split(',').map(s => s.trim());
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: 'DeafHive Submissions <onboarding@resend.dev>',
+      to,
+      subject: `DeafHive — new ${type} submission awaiting review`,
+      text: `A new ${type} ("${name}") has been submitted via deafhive.online/submit.\n\nReview at: https://deafhive.online/admin/?tab=submissions&focus=${id}`,
+    }),
+  });
+}
+```
+
+New Worker secrets to add at Phase 0:
+
+```bash
+wrangler secret put RESEND_API_KEY        # from resend.com dashboard
+wrangler secret put NOTIFY_RECIPIENTS      # comma-separated emails
+```
+
+Phase 0 starts now.
