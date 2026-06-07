@@ -58,7 +58,7 @@ A staged plan for replacing the Airtable backend with a self-hosted (free-tier C
 | Service | Limit (free tier) | Realistic monthly usage at DeafHive's scale | Cost |
 |---|---|---|---|
 | Cloudflare D1 | 5 GB storage, 5M reads/day, 100k writes/day | ~2 MB, ~1,500 reads/day, ~50 writes/day | **$0** |
-| Cloudflare R2 | 10 GB storage, no egress fees | ~50 MB (orgs + event posters) | **$0** |
+| Cloudflare R2 | 10 GB storage, no egress fees | ~50 MB images + 0–1 GB videos (YouTube-hosted videos cost nothing) | **$0** |
 | Cloudflare Workers | 100k req/day | ~5,000 req/day | **$0** |
 | Cloudflare Turnstile (CAPTCHA) | unlimited free | ~10 submissions/week | **$0** |
 | GitHub Pages | 100 GB bandwidth/month | <1 GB | **$0** |
@@ -74,15 +74,15 @@ The work splits into 7 phases. Each phase ships independently and the live site 
 
 | Phase | Outcome | Effort |
 |---|---|---|
-| 0 | Cloudflare resources created, schema applied, dev environment ready | ~1 h |
-| 1 | Read-only Worker returning same JSON shape as today, backed by D1 with fixture data | ~3 h |
-| 2 | Admin UI shell — login, read-only tables for orgs + events | ~3 h |
-| 3 | Admin UI write — inline editing, status changes, delete, image upload | ~6 h |
-| 4 | Public submissions — form pages, rate-limited POST endpoints, abuse protection | ~3 h |
-| 5 | Migration script — Airtable → D1 + R2, validated row counts | ~2 h |
-| 6 | Cutover — flip `WORKER_URL`, monitor, hold old Worker as rollback | ~1 h |
+| 0 | Cloudflare resources created, schema applied (incl. `videos` table), dev environment ready | ~1 h |
+| 1 | Read-only Worker returning same JSON shape as today + new `/videos` endpoint, backed by D1 with fixture data | ~3.5 h |
+| 2 | Admin UI shell — login, read-only tables for orgs + events + videos | ~3 h |
+| 3 | Admin UI write — inline editing, status changes, delete, image + video upload | ~7 h |
+| 4 | Public submissions — form pages (org + event + video), rate-limited POST endpoints, abuse protection | ~3.5 h |
+| 5 | Migration — Airtable → D1 + R2 for orgs/events, + seed the 7 current YouTube embeds into `videos` | ~2.5 h |
+| 6 | Cutover — flip `WORKER_URL`, replace hard-coded video block in `index.html` with dynamic render, monitor, hold old Worker as rollback | ~1.5 h |
 | 7 | Decommission — revoke Airtable PAT, downgrade Team plan | ~30 min |
-| | **Total** | **~19 h** (3 working days) |
+| | **Total** | **~22 h** (3–4 working days) |
 
 ---
 
@@ -114,7 +114,7 @@ wrangler r2 bucket create deafhive-images
 
 ### 0.2 Add R2 custom domain (one-time)
 
-In the Cloudflare dashboard → R2 → `deafhive-images` → Settings → Custom Domains → add `images.deafhive.online`. Set up a DNS CNAME record at your DNS provider pointing `images` → `<bucket>.r2.cloudflarestorage.com` (Cloudflare provides the exact value). Once propagated, image URLs are `https://images.deafhive.online/<key>` — permanent, CDN-cached, zero egress fees.
+In the Cloudflare dashboard → R2 → `deafhive-images` → Settings → Custom Domains → add `media.deafhive.online`. Set up a DNS CNAME record at your DNS provider pointing `media` → `<bucket>.r2.cloudflarestorage.com` (Cloudflare provides the exact value). Once propagated, media URLs are `https://media.deafhive.online/<key>` — permanent, CDN-cached, zero egress fees. The bucket is named `deafhive-images` for historical reasons but serves both images (`orgs/`, `events/`) and videos (`videos/`).
 
 ### 0.3 Set Worker secrets
 
@@ -217,6 +217,36 @@ CREATE INDEX idx_events_status ON events(status);
 CREATE INDEX idx_events_date   ON events(event_date);
 CREATE INDEX idx_events_org    ON events(organisation_id);
 
+-- ── Videos ─────────────────────────────────────────────────────────────
+-- A video has EITHER a youtube_url OR a video_r2_key (or both — youtube
+-- preferred for embed if both set). poster_r2_key is an optional thumbnail
+-- override; if absent we fall back to YouTube's thumbnail (for youtube_url
+-- rows) or a generic placeholder (for R2-hosted rows without a poster).
+-- organisation_id is nullable: a video can stand alone in the "Videos"
+-- section, or be linked to an org (shown in the org's modal too).
+CREATE TABLE videos (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  name              TEXT NOT NULL,
+  status            TEXT NOT NULL DEFAULT 'pending'
+                     CHECK (status IN ('pending', 'approved', 'rejected', 'draft')),
+  organisation_id   INTEGER REFERENCES organisations(id) ON DELETE SET NULL,
+  youtube_url       TEXT,
+  video_r2_key      TEXT,      -- e.g. 'videos/2026/05/intro.mp4'
+  poster_r2_key     TEXT,      -- optional poster/thumbnail override
+  description       TEXT,
+  display_order     INTEGER,   -- admin pin order; NULL = sort by created_at DESC
+  submitted_via     TEXT NOT NULL DEFAULT 'admin'
+                     CHECK (submitted_via IN ('admin', 'public')),
+  created_at        INTEGER NOT NULL,
+  updated_at        INTEGER NOT NULL,
+  -- A video MUST have at least one playable source
+  CHECK (youtube_url IS NOT NULL OR video_r2_key IS NOT NULL)
+);
+
+CREATE INDEX idx_videos_status ON videos(status);
+CREATE INDEX idx_videos_org    ON videos(organisation_id);
+CREATE INDEX idx_videos_order  ON videos(display_order, created_at DESC);
+
 -- ── Submission rate limiting ───────────────────────────────────────────
 CREATE TABLE submission_quota (
   ip_hash      TEXT PRIMARY KEY,    -- SHA-256 of client IP (no PII stored)
@@ -232,7 +262,7 @@ CREATE TABLE audit_log (
   at         INTEGER NOT NULL,           -- unix epoch
   actor      TEXT NOT NULL,              -- 'admin' or 'public' or specific user
   action     TEXT NOT NULL,              -- 'create', 'update', 'delete', 'approve', 'reject'
-  entity     TEXT NOT NULL,              -- 'organisation' | 'event' | 'image'
+  entity     TEXT NOT NULL,              -- 'organisation' | 'event' | 'video' | 'image'
   entity_id  INTEGER,
   diff_json  TEXT                        -- optional JSON of changed fields
 );
@@ -243,16 +273,18 @@ CREATE INDEX idx_audit_at ON audit_log(at DESC);
 ### Schema decisions explained
 
 - **JSON-as-text for multi-select fields** (`category_types`, `age_categories`) — avoids three-table joins for a small list. SQLite has JSON1 built in; queries like `WHERE json_extract(category_types, '$[0]') = 'Community'` work, but for our scale we'll just parse client-side.
-- **R2 keys, not URLs** — store the bucket path (e.g. `orgs/2026/05/abc.jpg`), let the read API concatenate `https://images.deafhive.online/<key>` at render time. Keeps the database portable.
+- **R2 keys, not URLs** — store the bucket path (e.g. `orgs/2026/05/abc.jpg`), let the read API concatenate `https://media.deafhive.online/<key>` at render time. Keeps the database portable.
 - **Unix timestamps as INTEGER** — D1 doesn't have a native `TIMESTAMP` type; storing seconds-since-epoch is universal.
 - **`CHECK` constraints on status + submitted_via** — typo-proofs the small enum set at the database layer.
 - **No vocabulary table for categories** — values are small, stable, and OK to be free text. If you ever want admin-managed dropdowns, add a `vocabularies` table later.
+- **Videos: dual source + CHECK constraint** — a video row has either a `youtube_url` or an `video_r2_key` (or both, with YouTube preferred for embed). The `CHECK` at the bottom of the table prevents inserting a row with no playable source. `organisation_id` is nullable so videos can stand alone or be linked to an org. `display_order` lets admin pin the welcome video first; rows with `NULL` order fall back to `created_at DESC`.
+- **R2 video size budget** — R2 free tier is 10 GB. A 10-minute 720p MP4 ≈ 100 MB, so ~100 R2-hosted videos before paid storage kicks in ($0.015/GB/month after that). YouTube-hosted videos cost nothing in R2. The admin upload endpoint caps individual video uploads at 100 MB (Workers' max request body size on free tier).
 
 ---
 
 ## Worker endpoints
 
-The new Worker exposes ~14 routes. Below, **PUB** = no auth, **ADMIN** = requires bearer token, **SYS** = requires the existing purge secret.
+The new Worker exposes ~19 routes. Below, **PUB** = no auth, **ADMIN** = requires bearer token, **SYS** = requires the existing purge secret.
 
 ### Public read endpoints (cached)
 
@@ -260,11 +292,12 @@ The new Worker exposes ~14 routes. Below, **PUB** = no auth, **ADMIN** = require
 |---|---|---|---|
 | `GET` | `/organisations` | PUB | `{records: [...approved orgs with public fields...]}` — same shape as today |
 | `GET` | `/events` | PUB | `{records: [...approved events with public fields + joined org name...]}` |
+| `GET` | `/videos` | PUB | `{records: [...approved videos, sorted by display_order then created_at DESC, with joined org name if linked...]}` |
 
 Cache rules:
 - Same Cloudflare Cache API approach as today
 - TTL 1 hour for safety (R2 URLs don't expire so this is purely an optimisation now)
-- `/purge` clears both
+- `/purge` clears all three
 
 ### Public submission endpoints
 
@@ -272,6 +305,7 @@ Cache rules:
 |---|---|---|---|---|
 | `POST` | `/submissions/organisation` | PUB + rate-limit + Turnstile | JSON: org fields + optional `image_upload_id` | Inserts row with `status='pending'`, `submitted_via='public'` |
 | `POST` | `/submissions/event` | PUB + rate-limit + Turnstile | JSON: event fields + optional `image_upload_id` | Same for events |
+| `POST` | `/submissions/video` | PUB + rate-limit + Turnstile | JSON: `{name, description, youtube_url?, video_upload_id?, poster_upload_id?, organisation_id?}` | Inserts video row with `status='pending'`. Validates ≥1 of youtube_url/video_upload_id present. |
 | `POST` | `/submissions/upload` | PUB + rate-limit + Turnstile | multipart with one image | Uploads to R2 under `pending/<uuid>.<ext>`, returns `{id, url}` for the submitter to reference |
 
 Public submission rules:
@@ -294,7 +328,13 @@ Public submission rules:
 | `POST` | `/admin/organisations/:id/status` | Body `{status}` — sets status; if going to `approved`, fires `/purge` internally so the public site refreshes |
 | `GET` | `/admin/events*` | Same shape as orgs |
 | `POST/PUT/DELETE` | `/admin/events*` | Same shape as orgs |
-| `POST` | `/admin/upload` | Multipart image upload to R2, returns `{key, url}` |
+| `GET` | `/admin/videos?status=pending\|all` | List videos (filtered) |
+| `GET` | `/admin/videos/:id` | Single video |
+| `POST` | `/admin/videos` | Create new video (admin-direct). Body: `{name, description, youtube_url?, video_r2_key?, poster_r2_key?, organisation_id?, display_order?}`. Same CHECK as schema: ≥1 of youtube_url / video_r2_key. |
+| `PUT` | `/admin/videos/:id` | Update fields |
+| `DELETE` | `/admin/videos/:id` | Remove row + R2 objects (video + poster if present) |
+| `POST` | `/admin/videos/:id/status` | Body `{status}` — fires `/purge` on transition to `approved` |
+| `POST` | `/admin/upload` | Multipart upload to R2 — content-type drives target prefix (`image/*` → `orgs/`, `video/*` → `videos/`). Returns `{key, url}`. |
 | `DELETE` | `/admin/upload/:key` | Remove from R2 (also clears the reference in any row that has it) |
 | `GET` | `/admin/audit?limit=50` | Recent audit-log entries |
 
@@ -327,7 +367,7 @@ const ALLOWED_ORIGINS = [
       "id": 42,                           // D1 integer id, not Airtable rec-id
       "fields": {
         "name": "Bristol Beacon",
-        "logo_url": "https://images.deafhive.online/orgs/.../bb.jpg",
+        "logo_url": "https://media.deafhive.online/orgs/.../bb.jpg",
         "website": "https://bristolbeacon.org",
         "email_public": "hello@bristolbeacon.org",
         "about": "Bristol Beacon is...",
@@ -339,7 +379,31 @@ const ALLOWED_ORIGINS = [
 }
 ```
 
-`app.js`'s `SECTIONS.organisations.fields` config switches from Airtable `fld...` IDs to these stable JSON keys — a 7-line change in one place.
+`/videos` returns a similar shape:
+
+```json
+{
+  "records": [
+    {
+      "id": 7,
+      "fields": {
+        "name": "Welcome to DeafHive",
+        "description": "A short BSL introduction to the directory.",
+        "youtube_url": "https://www.youtube.com/watch?v=abc123",
+        "video_url": null,                                          // populated when video_r2_key set
+        "poster_url": "https://media.deafhive.online/videos/.../poster.jpg",
+        "organisation_id": null,
+        "organisation_name": null,                                  // joined when organisation_id set
+        "display_order": 1
+      }
+    }
+  ]
+}
+```
+
+The Worker derives `video_url` and `poster_url` from the R2 keys at response time — the client never touches raw bucket paths.
+
+`app.js`'s `SECTIONS.organisations.fields` config switches from Airtable `fld...` IDs to these stable JSON keys — a 7-line change in one place. A new `SECTIONS.videos` block (similar shape) renders the dynamic Videos section, replacing the 7 hard-coded YouTube embeds currently in `index.html`.
 
 ---
 
@@ -413,7 +477,7 @@ No application code redesign required — auth is a layer.
        PUT to R2 via env.IMAGES.put(key, body)
                 │
                 ▼
-    Returns { key, url: 'https://images.deafhive.online/<key>' }
+    Returns { key, url: 'https://media.deafhive.online/<key>' }
                 │
                 ▼
    Client uses url for preview;
@@ -426,7 +490,7 @@ Public submissions upload to `pending/` namespace. On approval, the admin endpoi
 
 ### Image cleanup
 
-When a row is deleted, the admin endpoint also issues `env.IMAGES.delete(key)` so we don't accumulate orphans. Belt-and-braces: a periodic Worker cron (free) walks `images.deafhive.online/orgs/*` and removes objects no row references.
+When a row is deleted, the admin endpoint also issues `env.IMAGES.delete(key)` so we don't accumulate orphans. Belt-and-braces: a periodic Worker cron (free) walks the R2 bucket's `orgs/`, `events/`, and `videos/` prefixes and removes objects no row references.
 
 ---
 
@@ -758,6 +822,7 @@ For transparency:
 | From address | `onboarding@resend.dev` |
 | To address(es) | `mail@signingworks.co.uk` (single recipient to start; Worker secret holds a comma-separated list for fan-out later) |
 | Vocabulary management | Admins can add new Category Type / Age Category values (adds a `vocabularies` table) |
+| Videos feature | New dynamic Videos section, replaces the 7 hard-coded YouTube embeds. Sources: YouTube URL **or** R2-hosted file (or both). Relationship: standalone **and** optionally linked to an organisation. |
 | Migration timing | Late-night low-traffic window (Sunday UK time) |
 | Backup cadence | Scripted weekly export (cron Worker or local script) |
 

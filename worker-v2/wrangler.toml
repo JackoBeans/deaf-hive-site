@@ -1,0 +1,41 @@
+# ──────────────────────────────────────────────────────────────────────
+# worker-v2 — DeafHive D1/R2-backed directory API
+#
+# Phase 0 scaffold. Replace REPLACE_AFTER_D1_CREATE with the database_id
+# printed by `wrangler d1 create deafhive`. Bindings are reachable in
+# the Worker as env.DB (D1) and env.MEDIA (R2).
+# ──────────────────────────────────────────────────────────────────────
+
+name = "directory-proxy-v2"
+main = "src/index.js"
+compatibility_date = "2026-06-07"
+
+# Local dev: wrangler dev --local --persist-to .wrangler/state
+# Live: wrangler deploy
+
+[[d1_databases]]
+binding = "DB"
+database_name = "deafhive"
+database_id = "REPLACE_AFTER_D1_CREATE"
+
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "deafhive-images"
+# (Bucket holds images AND videos — name kept for historical reasons.)
+
+# ── Secrets (set via dashboard or `wrangler secret put`) ──────────────
+# ADMIN_PASSWORD      — shared admin login password
+# ADMIN_TOKEN_SECRET  — HMAC key for signing session tokens
+# PURGE_SECRET        — bearer token for /purge (same model as v1 worker)
+# TURNSTILE_SECRET    — Cloudflare Turnstile server-side key
+# RESEND_API_KEY      — Resend API key (added in Phase 4)
+# NOTIFY_RECIPIENTS   — comma-separated email list (added in Phase 4)
+
+# Vars (non-secret config)
+[vars]
+# Edge-cache TTL for /organisations, /events, /videos (seconds)
+CACHE_TTL_SECONDS = "3600"
+# CORS allowlist (comma-separated, no spaces)
+ALLOWED_ORIGINS = "https://deafhive.online"
+# Public-facing base URL for R2-hosted assets
+MEDIA_BASE_URL = "https://media.deafhive.online"
