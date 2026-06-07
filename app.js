@@ -11,6 +11,23 @@
  */
 
 // ════════════════════════════════════════════════════════════════════════
+// FONT MEDIA SWAP (runs first — promotes the print-only Raleway stylesheet
+// to all-media once it has loaded). Lives in external JS so it works under
+// a strict CSP without 'unsafe-inline' in script-src.
+// ════════════════════════════════════════════════════════════════════════
+
+(function promoteRalewayStylesheet() {
+  const link = document.getElementById('raleway-css');
+  if (!link) return;
+  // .sheet is non-null once the stylesheet's rules are loaded and applied.
+  if (link.sheet) {
+    link.media = 'all';
+  } else {
+    link.addEventListener('load', () => { link.media = 'all'; }, { once: true });
+  }
+}());
+
+// ════════════════════════════════════════════════════════════════════════
 // CONFIGURATION
 // ════════════════════════════════════════════════════════════════════════
 
@@ -158,7 +175,9 @@ const EVENTS_CONFIG = {
   const videoModalBio     = videoModal ? videoModal.querySelector('.video-modal-bio')     : null;
 
   function videoModalPopulate(id, title, invoker) {
-    if (!videoModalFrame) return;
+    // Tell createModalAPI to abort the open if the iframe slot is missing —
+    // otherwise it would lock the page behind an empty modal.
+    if (!videoModalFrame) return false;
     // Replace any previous iframe with a fresh one (forces a clean YouTube load).
     const existing = videoModalFrame.querySelector('iframe');
     if (existing) existing.remove();
@@ -772,14 +791,27 @@ function createModalAPI(modal, options) {
     opts.closeSelector || '.org-modal-close, .event-modal-close, .video-modal-close'
   );
   let lastFocused = null;
+  // Track where a mousedown landed so we can tell a true backdrop click
+  // (started AND released on the dim backdrop) apart from a text-selection
+  // drag that began inside the white content and was released over the
+  // backdrop. Without this, the drag would close the modal mid-selection.
+  let mouseDownTarget = null;
 
-  function open() {
-    if (opts.populate) opts.populate.apply(null, arguments);
+  function open(...args) {
+    // populate may return `false` to abort the open — used by the video
+    // modal to bail when its iframe slot is missing, instead of leaving
+    // an empty locked modal over the page.
+    if (opts.populate && opts.populate(...args) === false) return;
     setSiblingsInert(modal, true);
     modal.classList.add('is-open');
     modal.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
-    lastFocused = document.activeElement;
+    // Prefer an explicit focusable element passed via args (e.g. the
+    // .video-facade button) over document.activeElement — Safari does not
+    // focus buttons on click, so activeElement is often <body> at this
+    // point, which would lose the user's focus point on close.
+    const invoker = args.find(a => a && typeof a.focus === 'function');
+    lastFocused = invoker || document.activeElement;
     if (closeBtn && typeof closeBtn.focus === 'function') closeBtn.focus();
   }
 
@@ -795,7 +827,11 @@ function createModalAPI(modal, options) {
   }
 
   if (closeBtn) closeBtn.addEventListener('click', close);
-  modal.addEventListener('click', e => { if (e.target === modal) close(); });
+  modal.addEventListener('mousedown', e => { mouseDownTarget = e.target; });
+  modal.addEventListener('click', e => {
+    if (e.target === modal && mouseDownTarget === modal) close();
+    mouseDownTarget = null;
+  });
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape' && modal.classList.contains('is-open')) close();
   });

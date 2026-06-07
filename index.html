@@ -65,11 +65,13 @@
   <link rel="preconnect" href="https://www.youtube-nocookie.com">
 
   <!-- Load Raleway asynchronously to avoid blocking first paint.
-       The `media="print"` trick keeps the request non-render-blocking; the
-       onload swap reapplies it to all media. <noscript> fallback restores
-       the synchronous load for users without JS. -->
+       The `media="print"` trick keeps the request non-render-blocking; an
+       early initialiser in app.js promotes it to `media="all"` once loaded.
+       The swap is in JS (not an inline `onload=` attribute) so it works
+       under a strict Content-Security-Policy that disallows inline event
+       handlers. <noscript> restores synchronous load for users without JS. -->
   <link rel="preload" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800;900&amp;display=swap" as="style" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800;900&amp;display=swap" media="print" onload="this.media='all'" crossorigin>
+  <link id="raleway-css" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800;900&amp;display=swap" media="print" crossorigin>
   <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800;900&amp;display=swap" crossorigin></noscript>
 
   <link rel="stylesheet" href="style.css">
