@@ -568,6 +568,102 @@ If the script crashes partway, the D1 state is incomplete. Recovery is easy: `wr
 
 ---
 
+## Parallel build & private testing strategy
+
+How the new site grows alongside the live one without visitors noticing a thing.
+
+### The mental model
+
+Only the **backend** needs to truly run "in parallel". Everything else (new admin UI, new submission form) can be deployed incrementally to the live `deafhive.online` site without affecting public visitors, as long as the homepage doesn't link to those new pages.
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│ Public visitor at deafhive.online/                                 │
+│                                                                    │
+│   • Sees the same homepage they see today                          │
+│   • Worker URL still points at directory-proxy (Airtable backend) │
+│   • No "Submit" link visible anywhere yet                          │
+│   • Has no idea anything is changing                               │
+└────────────────────────────────────────────────────────────────────┘
+                              │
+                              │ same repo, same site, same DNS
+                              ▼
+┌────────────────────────────────────────────────────────────────────┐
+│ You + admins (via specific URLs and feature flags):                │
+│                                                                    │
+│   deafhive.online/?staging=1                                       │
+│     • Loads homepage but swaps WORKER_URL to v2                    │
+│     • Shows D1-backed data, full parity verified                   │
+│                                                                    │
+│   deafhive.online/admin/  (password-protected)                     │
+│     • New admin UI                                                  │
+│     • Lives in same repo, behind login screen                      │
+│     • Bots can't find it; no public link from homepage             │
+│                                                                    │
+│   deafhive.online/submit/  (unlinked but reachable)                │
+│     • New submission form                                           │
+│     • Tested by you/admins via direct URL during build             │
+│     • No homepage link until launch day                            │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+### Mechanism 1 — backend feature flag in `app.js`
+
+```js
+// Default: production (Airtable backend, current live site)
+const WORKER_URL_PRODUCTION = 'https://directory-proxy.silent-term-d0e4.workers.dev';
+// Staging: new D1 backend (only loads if ?staging=1 in the URL)
+const WORKER_URL_STAGING    = 'https://directory-proxy-v2.silent-term-d0e4.workers.dev';
+
+const isStaging = new URLSearchParams(location.search).get('staging') === '1';
+const WORKER_URL = isStaging ? WORKER_URL_STAGING : WORKER_URL_PRODUCTION;
+```
+
+- Public visitor at `deafhive.online/` → hits Airtable Worker (unchanged)
+- You at `deafhive.online/?staging=1` → hits D1 Worker (testing the new backend)
+
+Same HTML, CSS, JS — only the data source flips based on the URL parameter. The new Worker's CORS allowlist includes `https://deafhive.online` so the same origin works for both.
+
+### Mechanism 2 — three layers of "private" for the admin UI
+
+The new admin lives at `deafhive.online/admin/` (built by Phase 2–3). Layers of inaccessibility:
+
+| Layer | What it does |
+|---|---|
+| No homepage link | Casual visitors don't know it exists |
+| Login screen on first interaction | Typing the URL just shows a password field |
+| Worker bearer-token auth | Even reaching `/admin/` doesn't grant data access without a valid token |
+| `robots.txt` Disallow | Search engines won't index it |
+
+### Mechanism 3 — submission form lives but is unlinked
+
+`/submit/` is reachable from day one of Phase 4, but no public page links to it. You and a few testers exercise it via direct URL. On launch day, you add a "Submit an organisation" button to the homepage — that's the moment the public can find it.
+
+### Optional upgrade — Cloudflare Pages + Access (strongest privacy)
+
+For maximum privacy during testing (e.g., demos where you don't want anyone discovering `?staging=1`), there's a stronger option: **Cloudflare Access** wraps any URL with a login screen, restricted to specific emails. Free for up to 50 users; integrates with Google, GitHub, Microsoft, or one-time email codes.
+
+Cloudflare Access requires the site to be behind Cloudflare DNS. Today the site is on GitHub Pages (DNS points at GitHub IPs). Moving to **Cloudflare Pages** (free, same limits as GitHub Pages, deploys from the same repo) puts the site behind Cloudflare and unlocks:
+
+- Wrap `deafhive.online/admin/*` with Access → only specific emails get in
+- Wrap `deafhive.online/?staging=1` (or a `/preview/` path) with Access → only listed testers see new-backend rendering
+- Single dashboard for Pages + Workers + D1 + R2 + Access
+- ~30 min one-off migration during the rebuild
+
+Worth doing if you want belt-and-braces privacy; safe to skip if "password + no link + robots disallow" is enough.
+
+### Visitor-visible difference during the build
+
+At every point from "started the rebuild" through "decommissioned Airtable", a public visitor to `deafhive.online` sees:
+
+- The same homepage layout
+- The same data they see today (until cutover)
+- The same data, freshly served from the new backend (after cutover)
+- The same URL
+- No login prompts, no redirects, no maintenance pages, no service outage
+
+The only risky moment is the cutover itself — a 30-second GitHub Pages rebuild that swaps which Worker URL `app.js` calls.
+
 ## Cutover plan
 
 ### Pre-cutover (Phase 5 complete)
