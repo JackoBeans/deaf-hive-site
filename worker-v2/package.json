@@ -1,0 +1,5 @@
+{
+  "type": "module",
+  "private": true,
+  "description": "Marks migrate.js as an ES module so Node doesn't reparse it (and silences the MODULE_TYPELESS_PACKAGE_JSON warning). Wrangler does NOT use this file — it reads wrangler.toml."
+}
