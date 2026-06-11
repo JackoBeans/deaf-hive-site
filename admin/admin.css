@@ -53,6 +53,11 @@
 
 * { box-sizing: border-box; }
 
+/* Browser [hidden] is overridden by any class with an explicit `display:` rule
+   (e.g. .login-view, .shell-view use `display: grid`). This global !important
+   guarantees `el.hidden = true` actually hides the element regardless. */
+[hidden] { display: none !important; }
+
 html, body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
