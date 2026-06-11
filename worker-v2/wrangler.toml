@@ -16,7 +16,7 @@ compatibility_date = "2026-06-07"
 [[d1_databases]]
 binding = "DB"
 database_name = "deafhive"
-database_id = "REPLACE_AFTER_D1_CREATE"
+database_id = "6e2bbca6-4743-45b6-8b8f-d4b8771fcaf2"
 
 [[r2_buckets]]
 binding = "MEDIA"
