@@ -1,46 +1,33 @@
 // ════════════════════════════════════════════════════════════════════════
-// DeafHive worker-v2 — Phase 0 hello-world router
+// DeafHive worker-v2 — router
 //
-// This is a SCAFFOLD. It exposes just enough to prove the D1 + R2 bindings
-// are wired correctly:
+// Endpoints (Phase 1):
+//   GET  /organisations    — approved orgs from D1, edge-cached
+//   GET  /events           — approved events + joined org name, edge-cached
+//   GET  /videos           — approved videos + joined org name, edge-cached
+//   POST /purge            — clears all three caches (X-Purge-Token header)
+//   GET  /healthz          — { ok, version }
+//   GET  /probe-bindings   — confirms D1 + R2 bindings reachable (Phase 0)
 //
-//   GET /healthz          → { ok: true, version: '0.1.0-phase0' }
-//   GET /probe-bindings   → { db: <D1 ping result>, r2: <R2 ping result> }
-//
-// Real endpoints (/organisations, /events, /videos, /admin/*, /submissions/*)
-// land in Phase 1 onwards. See docs/REBUILD_PLAN.md for the full route table.
+// Real admin / submission / upload endpoints land in Phase 2+.
 // ════════════════════════════════════════════════════════════════════════
 
-const VERSION = '0.1.0-phase0';
+import {
+  jsonResponse,
+  preflightResponse,
+} from './cors.js';
+import { cachePurge } from './cache.js';
+import { handleRead, READ_PATHS } from './reads.js';
 
-// ── Tiny CORS helper (full implementation lifts from worker/src/index.js in Phase 1) ──
-function corsHeaders(request, env) {
-  const allowed = (env.ALLOWED_ORIGINS || '').split(',').map(s => s.trim()).filter(Boolean);
-  const origin = request.headers.get('Origin');
-  const ok = origin && allowed.includes(origin);
-  return {
-    'Access-Control-Allow-Origin': ok ? origin : 'null',
-    'Vary': 'Origin',
-  };
+const VERSION = '0.2.0-phase1';
+
+// ── Phase 0 probes (kept for ongoing health checks) ────────────────────
+
+async function handleHealthz(env, origin) {
+  return jsonResponse({ ok: true, version: VERSION }, 200, env, origin);
 }
 
-function json(data, init, request, env) {
-  const headers = {
-    'Content-Type': 'application/json; charset=utf-8',
-    ...corsHeaders(request, env),
-    ...(init?.headers || {}),
-  };
-  return new Response(JSON.stringify(data, null, 2), { ...init, headers });
-}
-
-// ── Route handlers ──────────────────────────────────────────────────────
-
-async function handleHealthz(request, env) {
-  return json({ ok: true, version: VERSION }, { status: 200 }, request, env);
-}
-
-async function handleProbeBindings(request, env) {
-  // D1 probe: run a trivial query that doesn't depend on any table existing
+async function handleProbeBindings(env, origin) {
   let dbResult;
   try {
     const row = await env.DB.prepare('SELECT 1 AS one').first();
@@ -49,7 +36,6 @@ async function handleProbeBindings(request, env) {
     dbResult = { ok: false, error: String(err?.message || err) };
   }
 
-  // R2 probe: list with a small cap. Doesn't require any objects to exist.
   let r2Result;
   try {
     const list = await env.MEDIA.list({ limit: 1 });
@@ -64,7 +50,7 @@ async function handleProbeBindings(request, env) {
   }
 
   const allOk = dbResult.ok && r2Result.ok;
-  return json(
+  return jsonResponse(
     {
       ok: allOk,
       version: VERSION,
@@ -72,44 +58,59 @@ async function handleProbeBindings(request, env) {
       r2: r2Result,
       media_base_url: env.MEDIA_BASE_URL || null,
     },
-    { status: allOk ? 200 : 503 },
-    request,
+    allOk ? 200 : 503,
     env,
+    origin,
   );
 }
 
-// ── Router ──────────────────────────────────────────────────────────────
+// ── Purge — same X-Purge-Token model as the existing worker so the live
+//    Airtable automation can keep pointing here unchanged at cutover. ──
+
+async function handlePurge(request, env, url, origin) {
+  const provided = request.headers.get('X-Purge-Token');
+  if (!env.PURGE_SECRET) {
+    return jsonResponse({ error: 'purge_not_configured' }, 503, env, origin);
+  }
+  if (!provided || provided !== env.PURGE_SECRET) {
+    return jsonResponse({ error: 'unauthorised' }, 401, env, origin);
+  }
+  const purged = await cachePurge(url.origin, READ_PATHS);
+  return jsonResponse({ purged }, 200, env, origin);
+}
+
+// ── Router ─────────────────────────────────────────────────────────────
 
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
+    const origin = request.headers.get('Origin') || '';
 
-    // CORS preflight
     if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        status: 204,
-        headers: {
-          ...corsHeaders(request, env),
-          'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Purge-Token',
-          'Access-Control-Max-Age': '86400',
-        },
-      });
+      return preflightResponse(env, origin);
+    }
+
+    if (request.method === 'POST' && url.pathname === '/purge') {
+      return handlePurge(request, env, url, origin);
     }
 
     if (request.method === 'GET' && url.pathname === '/healthz') {
-      return handleHealthz(request, env);
+      return handleHealthz(env, origin);
     }
 
     if (request.method === 'GET' && url.pathname === '/probe-bindings') {
-      return handleProbeBindings(request, env);
+      return handleProbeBindings(env, origin);
     }
 
-    return json(
-      { error: 'not_found', path: url.pathname, hint: 'Phase 0 scaffold — only /healthz and /probe-bindings exist yet.' },
-      { status: 404 },
-      request,
+    if (request.method === 'GET' && READ_PATHS.includes(url.pathname)) {
+      return handleRead(request, env, ctx, url, origin);
+    }
+
+    return jsonResponse(
+      { error: 'not_found', path: url.pathname },
+      404,
       env,
+      origin,
     );
   },
 };
