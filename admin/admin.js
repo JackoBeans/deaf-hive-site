@@ -22,6 +22,61 @@
   const WORKER_URL = 'https://directory-proxy-v2.silent-term-d0e4.workers.dev';
   const TOKEN_KEY  = 'deafhive_admin_token';
 
+  const STATUS_VALUES = ['pending', 'approved', 'rejected', 'draft'];
+
+  // Existing vocabulary — admin-managed editing comes later (Phase 5
+  // schema addendum). For now these match the public site's filter chips.
+  const CATEGORY_TYPES = ['Community', 'Education', 'Sports', 'Faith', 'Arts', 'Health', 'Support'];
+  const AGE_CATEGORIES = ['Children (0-12)', 'Young people (13-24)', 'Adults (25-59)', 'Seniors (60+)', 'All ages'];
+
+  // ── Per-table form schema (drives the edit modal renderer) ─────────
+
+  const SCHEMA = {
+    organisations: {
+      label: 'Organisation',
+      uploadFolder: 'orgs',
+      fields: [
+        { key: 'name',           label: 'Name',                 type: 'text',     required: true },
+        { key: 'status',         label: 'Status',               type: 'status' },
+        { key: 'about',          label: 'About (Markdown)',     type: 'textarea' },
+        { key: 'logo_r2_key',    label: 'Logo',                 type: 'image',    urlKey: 'logo_url', accept: 'image/*' },
+        { key: 'website',        label: 'Website',              type: 'url' },
+        { key: 'email_public',   label: 'Public contact email', type: 'email' },
+        { key: 'email_admin',    label: 'Admin email (private)', type: 'email' },
+        { key: 'address',        label: 'Address',              type: 'text' },
+        { key: 'category_types', label: 'Category Types',       type: 'chips',    options: CATEGORY_TYPES },
+        { key: 'age_categories', label: 'Age Categories',       type: 'chips',    options: AGE_CATEGORIES },
+      ],
+    },
+    events: {
+      label: 'Event',
+      uploadFolder: 'events',
+      fields: [
+        { key: 'name',            label: 'Event name',  type: 'text',     required: true },
+        { key: 'status',          label: 'Status',      type: 'status' },
+        { key: 'event_date',      label: 'Date & time', type: 'datetime', required: true },
+        { key: 'organisation_id', label: 'Organisation',type: 'org-picker' },
+        { key: 'address',         label: 'Address',     type: 'text' },
+        { key: 'details',         label: 'Details',     type: 'textarea' },
+        { key: 'poster_r2_key',   label: 'Poster',      type: 'image', urlKey: 'poster_url', accept: 'image/*' },
+      ],
+    },
+    videos: {
+      label: 'Video',
+      uploadFolder: 'videos',
+      fields: [
+        { key: 'name',            label: 'Title',       type: 'text', required: true },
+        { key: 'status',          label: 'Status',      type: 'status' },
+        { key: 'youtube_url',     label: 'YouTube URL', type: 'url' },
+        { key: 'video_r2_key',    label: 'Video file (R2)', type: 'video', urlKey: 'video_url', accept: 'video/*' },
+        { key: 'poster_r2_key',   label: 'Poster (optional)', type: 'image', urlKey: 'poster_url', accept: 'image/*' },
+        { key: 'description',     label: 'Description', type: 'textarea' },
+        { key: 'organisation_id', label: 'Organisation (optional)', type: 'org-picker' },
+        { key: 'display_order',   label: 'Pin order (lower = first)', type: 'number' },
+      ],
+    },
+  };
+
   // ── DOM refs ────────────────────────────────────────────────────────
 
   const $loginView   = document.getElementById('login-view');
@@ -46,10 +101,29 @@
   const $tableEmpty   = document.getElementById('table-empty');
   const $tableError   = document.getElementById('table-error');
   const $tableLoading = document.getElementById('table-loading');
+  const $newBtn       = document.getElementById('new-btn');
+
+  const $editModal    = document.getElementById('edit-modal');
+  const $editForm     = document.getElementById('edit-form');
+  const $editTitle    = document.getElementById('edit-modal-title');
+  const $editFields   = document.getElementById('edit-fields');
+  const $editError    = document.getElementById('edit-error');
+  const $editDelete   = document.getElementById('edit-delete-btn');
+  const $editCancel   = document.getElementById('edit-cancel-btn');
+  const $editSave     = document.getElementById('edit-save-btn');
+
+  const $confirmModal = document.getElementById('confirm-modal');
+  const $confirmMsg   = document.getElementById('confirm-message');
+  const $confirmYes   = document.getElementById('confirm-yes');
+  const $confirmNo    = document.getElementById('confirm-no');
 
   // ── State ───────────────────────────────────────────────────────────
 
   let currentTab = 'organisations';
+  // Editor state — null when modal closed, {mode, id, record, pendingFields} when open.
+  let editor = null;
+  // Cached org list for the org-picker dropdown in events/videos forms.
+  let orgCache = null;
 
   // ── Token helpers ───────────────────────────────────────────────────
 
@@ -63,7 +137,9 @@
     const headers = { ...(options.headers || {}) };
     const token = getToken();
     if (token) headers['Authorization'] = `Bearer ${token}`;
-    if (options.body && !headers['Content-Type']) {
+    // Don't set Content-Type for FormData — the browser sets it with the
+    // multipart boundary. Setting it manually breaks the upload.
+    if (options.body && !headers['Content-Type'] && !(options.body instanceof FormData)) {
       headers['Content-Type'] = 'application/json';
     }
     const res = await fetch(`${WORKER_URL}${path}`, { ...options, headers });
@@ -191,6 +267,7 @@
       { key: 'email_public',   label: 'Email',    render: text },
       { key: 'submitted_via',  label: 'Via',      render: text },
       { key: 'updated_at',     label: 'Updated',  render: epoch },
+      { key: '__actions',      label: '',         render: actionsCell },
     ],
     events: [
       { key: 'name',              label: 'Event',         render: text },
@@ -201,6 +278,7 @@
       { key: 'poster_url',        label: 'Poster',        render: thumb },
       { key: 'submitted_via',     label: 'Via',           render: text },
       { key: 'updated_at',        label: 'Updated',       render: epoch },
+      { key: '__actions',         label: '',              render: actionsCell },
     ],
     videos: [
       { key: 'name',              label: 'Video',        render: text },
@@ -211,8 +289,22 @@
       { key: 'poster_url',        label: 'Poster',       render: thumb },
       { key: 'organisation_name', label: 'Organisation', render: text },
       { key: 'updated_at',        label: 'Updated',      render: epoch },
+      { key: '__actions',         label: '',             render: actionsCell },
     ],
   };
+
+  function actionsCell() {
+    const wrap = document.createElement('div');
+    wrap.className = 'row-actions';
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'icon-btn js-row-delete';
+    del.title = 'Delete';
+    del.setAttribute('aria-label', 'Delete row');
+    del.textContent = '🗑';
+    wrap.appendChild(del);
+    return wrap;
+  }
 
   // Renderers — each returns a DOM node, never an HTML string.
 
@@ -370,6 +462,434 @@
       }
       $tbody.appendChild(tr);
     }
+  }
+
+  // ── Table-row interactions ──────────────────────────────────────────
+
+  $tbody.addEventListener('click', async (e) => {
+    const tr = e.target.closest('tr[data-id]');
+    if (!tr) return;
+    const id = Number(tr.dataset.id);
+
+    // Delete button click
+    if (e.target.closest('.js-row-delete')) {
+      e.stopPropagation();
+      return confirmDelete(id);
+    }
+
+    // Status badge click → cycle to next status
+    if (e.target.closest('.badge')) {
+      e.stopPropagation();
+      return cycleStatus(id, e.target.closest('.badge').textContent.trim());
+    }
+
+    // Row click → open edit modal
+    return openEditModalFor(id);
+  });
+
+  $newBtn.addEventListener('click', () => openEditModalNew());
+
+  // ── Status cycle (pending → approved → rejected → pending) ──────────
+
+  const STATUS_CYCLE = { pending: 'approved', approved: 'rejected', rejected: 'pending', draft: 'pending' };
+
+  async function cycleStatus(id, currentStatus) {
+    const next = STATUS_CYCLE[currentStatus] || 'pending';
+    try {
+      const res = await apiCall(`/admin/${currentTab}/${id}/status`, {
+        method: 'POST',
+        body: JSON.stringify({ status: next }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        alert(`Status change failed: ${j.error || res.status}`);
+        return;
+      }
+      await loadTable();
+    } catch (err) {
+      if (err.message !== 'unauthorised') alert(`Network error: ${err.message || err}`);
+    }
+  }
+
+  // ── Edit modal — open / close ───────────────────────────────────────
+
+  function openEditModalNew() {
+    editor = { mode: 'create', id: null, record: { id: null, fields: {} }, pendingFields: {} };
+    $editTitle.textContent = `New ${SCHEMA[currentTab].label.toLowerCase()}`;
+    $editDelete.hidden = true;
+    $editError.hidden = true;
+    renderEditForm();
+    showEditModal();
+  }
+
+  async function openEditModalFor(id) {
+    try {
+      const res = await apiCall(`/admin/${currentTab}/${id}`);
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        alert(`Could not load row: ${j.error || res.status}`);
+        return;
+      }
+      const data = await res.json();
+      editor = { mode: 'edit', id, record: data.record, pendingFields: {} };
+      $editTitle.textContent = `Edit ${SCHEMA[currentTab].label.toLowerCase()}`;
+      $editDelete.hidden = false;
+      $editError.hidden = true;
+      renderEditForm();
+      showEditModal();
+    } catch (err) {
+      if (err.message !== 'unauthorised') alert(`Network error: ${err.message || err}`);
+    }
+  }
+
+  function showEditModal() {
+    $editModal.hidden = false;
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => {
+      const first = $editFields.querySelector('input,textarea,select');
+      if (first && typeof first.focus === 'function') first.focus();
+    }, 0);
+  }
+
+  function closeEditModal() {
+    $editModal.hidden = true;
+    document.body.style.overflow = '';
+    editor = null;
+  }
+
+  $editModal.addEventListener('click', (e) => {
+    if (e.target.dataset && 'close' in e.target.dataset) closeEditModal();
+  });
+  $editCancel.addEventListener('click', closeEditModal);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !$editModal.hidden) closeEditModal();
+  });
+
+  // ── Edit form renderer ─────────────────────────────────────────────
+
+  function renderEditForm() {
+    while ($editFields.firstChild) $editFields.removeChild($editFields.firstChild);
+    const schema = SCHEMA[currentTab];
+    const f = editor.record.fields || {};
+    for (const def of schema.fields) {
+      $editFields.appendChild(renderField(def, f[def.key]));
+    }
+  }
+
+  function renderField(def, value) {
+    const wrap = document.createElement('div');
+    wrap.className = `field field-${def.type}`;
+
+    const label = document.createElement('label');
+    label.className = 'field-label';
+    label.textContent = def.label + (def.required ? ' *' : '');
+    wrap.appendChild(label);
+
+    let input;
+    switch (def.type) {
+      case 'text':
+      case 'email':
+      case 'url':
+      case 'number': {
+        input = document.createElement('input');
+        input.type = def.type === 'number' ? 'number' : def.type;
+        input.value = value == null ? '' : String(value);
+        wireInput(input, def.key, def.type === 'number' ? 'number' : 'string');
+        break;
+      }
+      case 'datetime': {
+        input = document.createElement('input');
+        input.type = 'datetime-local';
+        input.value = isoToLocalInput(value);
+        input.addEventListener('input', () => {
+          editor.pendingFields[def.key] = input.value ? localInputToIso(input.value) : null;
+        });
+        break;
+      }
+      case 'textarea': {
+        input = document.createElement('textarea');
+        input.value = value == null ? '' : String(value);
+        wireInput(input, def.key, 'string');
+        break;
+      }
+      case 'status': {
+        input = document.createElement('div');
+        input.className = 'field-chips';
+        const current = value || 'draft';
+        for (const s of STATUS_VALUES) {
+          const chip = document.createElement('label');
+          chip.className = 'chip-toggle' + (s === current ? ' is-checked' : '');
+          chip.dataset.status = s;
+          const cb = document.createElement('input');
+          cb.type = 'radio';
+          cb.name = '__status';
+          cb.value = s;
+          cb.checked = s === current;
+          chip.appendChild(cb);
+          chip.appendChild(document.createTextNode(' ' + s));
+          chip.addEventListener('click', (e) => {
+            e.preventDefault();
+            for (const c of input.querySelectorAll('.chip-toggle')) c.classList.remove('is-checked');
+            chip.classList.add('is-checked');
+            cb.checked = true;
+            editor.pendingFields[def.key] = s;
+          });
+          input.appendChild(chip);
+        }
+        break;
+      }
+      case 'chips': {
+        input = document.createElement('div');
+        input.className = 'field-chips';
+        const selected = new Set(Array.isArray(value) ? value : []);
+        for (const opt of def.options) {
+          const chip = document.createElement('label');
+          chip.className = 'chip-toggle' + (selected.has(opt) ? ' is-checked' : '');
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.checked = selected.has(opt);
+          chip.appendChild(cb);
+          chip.appendChild(document.createTextNode(' ' + opt));
+          chip.addEventListener('click', (e) => {
+            e.preventDefault();
+            cb.checked = !cb.checked;
+            chip.classList.toggle('is-checked', cb.checked);
+            const all = Array.from(input.querySelectorAll('input[type=checkbox]'))
+              .map((c, i) => c.checked ? def.options[i] : null)
+              .filter(Boolean);
+            editor.pendingFields[def.key] = all;
+          });
+          input.appendChild(chip);
+        }
+        break;
+      }
+      case 'image':
+      case 'video': {
+        input = renderUploadField(def, value, editor.record.fields[def.urlKey]);
+        break;
+      }
+      case 'org-picker': {
+        input = renderOrgPicker(def, value);
+        break;
+      }
+      default: {
+        input = document.createElement('input');
+        input.type = 'text';
+        input.value = value == null ? '' : String(value);
+        wireInput(input, def.key, 'string');
+      }
+    }
+    wrap.appendChild(input);
+    return wrap;
+  }
+
+  function wireInput(input, key, kind) {
+    input.addEventListener('input', () => {
+      const raw = input.value;
+      if (raw === '') editor.pendingFields[key] = null;
+      else if (kind === 'number') {
+        const n = Number(raw);
+        editor.pendingFields[key] = Number.isFinite(n) ? n : null;
+      } else {
+        editor.pendingFields[key] = raw;
+      }
+    });
+  }
+
+  function renderUploadField(def, currentKey, currentUrl) {
+    const wrap = document.createElement('div');
+    wrap.className = 'upload-widget';
+
+    const preview = document.createElement('img');
+    preview.className = 'upload-preview';
+    preview.alt = '';
+    if (currentUrl) preview.src = currentUrl;
+    preview.addEventListener('error', () => { preview.style.visibility = 'hidden'; });
+    wrap.appendChild(preview);
+
+    const right = document.createElement('div');
+    right.style.flex = '1';
+
+    const file = document.createElement('input');
+    file.type = 'file';
+    file.accept = def.accept || '*/*';
+    right.appendChild(file);
+
+    const status = document.createElement('div');
+    status.className = 'upload-status';
+    status.textContent = currentKey ? `Current: ${currentKey}` : '(no file)';
+    right.appendChild(status);
+
+    file.addEventListener('change', async () => {
+      const f = file.files && file.files[0];
+      if (!f) return;
+      status.textContent = `Uploading ${f.name}…`;
+      try {
+        const form = new FormData();
+        form.append('file', f);
+        form.append('folder', SCHEMA[currentTab].uploadFolder);
+        const res = await apiCall('/admin/upload', { method: 'POST', body: form });
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          status.textContent = `Upload failed: ${j.error || res.status}`;
+          return;
+        }
+        const j = await res.json();
+        editor.pendingFields[def.key] = j.key;
+        status.textContent = `Uploaded: ${j.key}`;
+        preview.src = j.url;
+        preview.style.visibility = 'visible';
+      } catch (err) {
+        if (err.message !== 'unauthorised') status.textContent = `Error: ${err.message || err}`;
+      }
+    });
+
+    wrap.appendChild(right);
+    return wrap;
+  }
+
+  function renderOrgPicker(def, currentId) {
+    const sel = document.createElement('select');
+    const blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = '— none —';
+    sel.appendChild(blank);
+
+    // Populate from cache (or fetch in background)
+    function fillFromCache() {
+      while (sel.children.length > 1) sel.removeChild(sel.lastChild);
+      for (const r of (orgCache || [])) {
+        const o = document.createElement('option');
+        o.value = String(r.id);
+        o.textContent = r.fields.name;
+        if (currentId != null && Number(currentId) === r.id) o.selected = true;
+        sel.appendChild(o);
+      }
+    }
+
+    if (orgCache) {
+      fillFromCache();
+    } else {
+      apiCall('/admin/organisations?status=all').then(async (res) => {
+        if (!res.ok) return;
+        const data = await res.json();
+        orgCache = data.records || [];
+        fillFromCache();
+      }).catch(() => {});
+    }
+
+    sel.addEventListener('change', () => {
+      editor.pendingFields[def.key] = sel.value === '' ? null : Number(sel.value);
+    });
+    return sel;
+  }
+
+  // ── Date conversion (D1 stores ISO 8601 UTC) ───────────────────────
+
+  function isoToLocalInput(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    const pad = n => String(n).padStart(2, '0');
+    // datetime-local expects YYYY-MM-DDTHH:MM (in local time)
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function localInputToIso(localStr) {
+    if (!localStr) return null;
+    // Treat input as local time, convert to UTC ISO string.
+    return new Date(localStr).toISOString();
+  }
+
+  // ── Save / delete ──────────────────────────────────────────────────
+
+  $editForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    if (!editor) return;
+
+    $editError.hidden = true;
+    $editSave.disabled = true;
+
+    const payload = { fields: editor.pendingFields };
+
+    // For create, the pendingFields must include required ones — also merge
+    // the empty record so the server sees the shape it expects.
+    if (editor.mode === 'create') {
+      // Fold in any defaulted values the user didn't touch
+      const merged = { ...editor.record.fields, ...editor.pendingFields };
+      payload.fields = merged;
+    }
+
+    try {
+      const path = editor.mode === 'create'
+        ? `/admin/${currentTab}`
+        : `/admin/${currentTab}/${editor.id}`;
+      const method = editor.mode === 'create' ? 'POST' : 'PUT';
+      const res = await apiCall(path, {
+        method,
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        $editError.textContent = `Save failed: ${j.error || res.status}${j.message ? ` — ${j.message}` : ''}`;
+        $editError.hidden = false;
+        return;
+      }
+      closeEditModal();
+      await loadTable();
+    } catch (err) {
+      if (err.message !== 'unauthorised') {
+        $editError.textContent = `Network error: ${err.message || err}`;
+        $editError.hidden = false;
+      }
+    } finally {
+      $editSave.disabled = false;
+    }
+  });
+
+  $editDelete.addEventListener('click', () => {
+    if (!editor || editor.mode !== 'edit') return;
+    confirmDelete(editor.id);
+  });
+
+  // ── Delete (with confirm) ──────────────────────────────────────────
+
+  function confirmDelete(id) {
+    const label = SCHEMA[currentTab].label.toLowerCase();
+    $confirmMsg.textContent = `Delete this ${label}? This cannot be undone.`;
+    $confirmYes.textContent = 'Delete';
+    $confirmModal.hidden = false;
+    document.body.style.overflow = 'hidden';
+
+    const onYes = async () => {
+      cleanup();
+      try {
+        const res = await apiCall(`/admin/${currentTab}/${id}`, { method: 'DELETE' });
+        if (!res.ok) {
+          const j = await res.json().catch(() => ({}));
+          alert(`Delete failed: ${j.error || res.status}`);
+          return;
+        }
+        if (!$editModal.hidden) closeEditModal();
+        await loadTable();
+      } catch (err) {
+        if (err.message !== 'unauthorised') alert(`Network error: ${err.message || err}`);
+      }
+    };
+    const onNo = () => cleanup();
+    function cleanup() {
+      $confirmModal.hidden = true;
+      document.body.style.overflow = $editModal.hidden ? '' : 'hidden';
+      $confirmYes.removeEventListener('click', onYes);
+      $confirmNo.removeEventListener('click', onNo);
+      $confirmModal.removeEventListener('click', backdropClose);
+    }
+    function backdropClose(e) {
+      if (e.target && e.target.dataset && 'confirmClose' in e.target.dataset) onNo();
+    }
+    $confirmYes.addEventListener('click', onYes);
+    $confirmNo.addEventListener('click', onNo);
+    $confirmModal.addEventListener('click', backdropClose);
   }
 
   // ── Boot ────────────────────────────────────────────────────────────

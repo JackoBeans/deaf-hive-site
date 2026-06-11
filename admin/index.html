@@ -58,6 +58,7 @@
 
       <span id="row-count" class="row-count" aria-live="polite"></span>
 
+      <button id="new-btn" type="button" class="new-btn">+ New</button>
       <button id="refresh-btn" type="button" class="refresh-btn" title="Refresh">↻ Refresh</button>
     </div>
 
@@ -71,6 +72,43 @@
       </table>
     </div>
   </section>
+
+  <!-- ───────── Edit modal (shared by all three tables) ───────── -->
+  <div id="edit-modal" class="edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title" hidden>
+    <div class="edit-modal-backdrop" data-close></div>
+    <div class="edit-modal-card">
+      <header class="edit-modal-header">
+        <h2 id="edit-modal-title" class="edit-modal-title">Edit</h2>
+        <button type="button" class="edit-modal-close" aria-label="Close" data-close>×</button>
+      </header>
+
+      <form id="edit-form" class="edit-form">
+        <div id="edit-fields" class="edit-fields"></div>
+
+        <p id="edit-error" class="edit-error" hidden></p>
+
+        <footer class="edit-modal-footer">
+          <button type="button" id="edit-delete-btn" class="btn btn-danger" hidden>Delete</button>
+          <span class="edit-modal-spacer"></span>
+          <button type="button" id="edit-cancel-btn" class="btn">Cancel</button>
+          <button type="submit" id="edit-save-btn" class="btn btn-primary">Save</button>
+        </footer>
+      </form>
+    </div>
+  </div>
+
+  <!-- ───────── Confirm dialog (delete + destructive flips) ───────── -->
+  <div id="confirm-modal" class="confirm-modal" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" hidden>
+    <div class="edit-modal-backdrop" data-confirm-close></div>
+    <div class="confirm-card">
+      <h2 id="confirm-title" class="confirm-title">Are you sure?</h2>
+      <p id="confirm-message" class="confirm-message"></p>
+      <footer class="confirm-footer">
+        <button type="button" id="confirm-no" class="btn">Cancel</button>
+        <button type="button" id="confirm-yes" class="btn btn-danger">Delete</button>
+      </footer>
+    </div>
+  </div>
 
   <script src="admin.js"></script>
 </body>
