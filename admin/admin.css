@@ -1,0 +1,374 @@
+/* ════════════════════════════════════════════════════════════════════════
+   DeafHive admin — minimal, accessible, dark-aware.
+   Phase 2: read-only shell. Phase 3 will add edit affordances.
+   ════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --bg:           #ffffff;
+  --bg-elevated: #f7f8fa;
+  --bg-row-alt:  #fafbfc;
+  --text:        #1c1f23;
+  --text-muted:  #5a6470;
+  --border:      #e4e7eb;
+  --border-strong: #c9ced6;
+  --link:        #0b5cab;
+  --link-hover:  #0a4d8c;
+  --accent:      #0b5cab;
+  --shadow:      0 1px 2px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.06);
+
+  /* status badge colours */
+  --badge-pending-bg:  #fff4d6;
+  --badge-pending-fg:  #7a5300;
+  --badge-approved-bg: #e1f5e6;
+  --badge-approved-fg: #1f6f37;
+  --badge-rejected-bg: #fbe1e3;
+  --badge-rejected-fg: #94232a;
+  --badge-draft-bg:    #ecedef;
+  --badge-draft-fg:    #5a6470;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:           #15171b;
+    --bg-elevated: #1c1f24;
+    --bg-row-alt:  #1a1d22;
+    --text:        #e6e8eb;
+    --text-muted:  #969ba3;
+    --border:      #2c3038;
+    --border-strong: #3a3f48;
+    --link:        #6db4ff;
+    --link-hover:  #94c9ff;
+    --shadow:      0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.3);
+
+    --badge-pending-bg:  #4a3c10;
+    --badge-pending-fg:  #ffd76b;
+    --badge-approved-bg: #143d22;
+    --badge-approved-fg: #6fdc8c;
+    --badge-rejected-bg: #4a1a1f;
+    --badge-rejected-fg: #ff8a92;
+    --badge-draft-bg:    #2a2d33;
+    --badge-draft-fg:    #b4bac3;
+  }
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--text);
+  background: var(--bg);
+}
+
+/* ── Login screen ──────────────────────────────────────────────────── */
+
+.login-view {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 24rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 2rem;
+  box-shadow: var(--shadow);
+}
+
+.login-title {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.login-help {
+  margin: 0 0 1.5rem 0;
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+.login-label {
+  display: block;
+  margin-bottom: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+#login-password {
+  display: block;
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.375rem;
+}
+
+#login-password:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.login-submit {
+  margin-top: 1rem;
+  display: block;
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border: 0;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.login-submit:hover    { background: var(--link-hover); }
+.login-submit:disabled { opacity: 0.55; cursor: progress; }
+
+.login-error {
+  margin-top: 1rem;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--badge-rejected-fg);
+  background: var(--badge-rejected-bg);
+  border-radius: 0.375rem;
+}
+
+/* ── Shell ─────────────────────────────────────────────────────────── */
+
+.shell-view {
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto auto auto 1fr;
+}
+
+.shell-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.shell-title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+}
+
+.shell-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.session-info {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.logout-btn {
+  font-size: 0.8125rem;
+  padding: 0.375rem 0.75rem;
+  font-family: inherit;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.logout-btn:hover { background: var(--bg); }
+
+/* ── Tabs ──────────────────────────────────────────────────────────── */
+
+.tab-strip {
+  display: flex;
+  gap: 0.25rem;
+  padding: 0.5rem 1rem 0 1rem;
+  background: var(--bg-elevated);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.tab-btn {
+  position: relative;
+  padding: 0.625rem 1rem;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: 0;
+  border-radius: 0.375rem 0.375rem 0 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tab-btn:hover { color: var(--text); }
+
+.tab-btn.is-active {
+  color: var(--text);
+  background: var(--bg);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+/* ── Toolbar ───────────────────────────────────────────────────────── */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.toolbar-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.status-filter {
+  padding: 0.375rem 0.5rem;
+  font-size: 0.875rem;
+  font-family: inherit;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.375rem;
+}
+
+.row-count {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin-left: auto;
+}
+
+.refresh-btn {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.8125rem;
+  font-family: inherit;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+
+.refresh-btn:hover { background: var(--bg-elevated); }
+
+/* ── Table ─────────────────────────────────────────────────────────── */
+
+.table-wrap {
+  padding: 0 0 2rem 0;
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.data-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--bg-elevated);
+  z-index: 1;
+}
+
+.data-table th,
+.data-table td {
+  padding: 0.625rem 1rem;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table th {
+  font-weight: 600;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.data-table tbody tr:nth-child(odd) { background: var(--bg-row-alt); }
+.data-table tbody tr:hover          { background: var(--bg-elevated); }
+
+.data-table td a {
+  color: var(--link);
+  text-decoration: none;
+}
+.data-table td a:hover { text-decoration: underline; }
+
+/* ── Status badges ─────────────────────────────────────────────────── */
+
+.badge {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.badge.is-pending  { color: var(--badge-pending-fg);  background: var(--badge-pending-bg); }
+.badge.is-approved { color: var(--badge-approved-fg); background: var(--badge-approved-bg); }
+.badge.is-rejected { color: var(--badge-rejected-fg); background: var(--badge-rejected-bg); }
+.badge.is-draft    { color: var(--badge-draft-fg);    background: var(--badge-draft-bg); }
+
+.muted { color: var(--text-muted); font-style: italic; }
+
+.thumb {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  object-fit: cover;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+}
+
+/* ── Empty / error / loading states ────────────────────────────────── */
+
+.table-empty,
+.table-error,
+.table-loading {
+  padding: 2rem 1.5rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+.table-error {
+  color: var(--badge-rejected-fg);
+  background: var(--badge-rejected-bg);
+  border-radius: 0.375rem;
+  margin: 1rem 1.5rem;
+}
+
+/* ── Narrow screens — collapse padding ─────────────────────────────── */
+
+@media (max-width: 640px) {
+  .shell-header,
+  .toolbar { padding-left: 1rem; padding-right: 1rem; }
+
+  .data-table th,
+  .data-table td { padding: 0.5rem 0.625rem; }
+}

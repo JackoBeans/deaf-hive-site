@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>DeafHive — Admin</title>
+  <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+  <!-- ───────── Login screen ───────── -->
+  <section id="login-view" class="login-view" hidden>
+    <form id="login-form" class="login-card" autocomplete="off">
+      <h1 class="login-title">DeafHive admin</h1>
+      <p class="login-help">Sign in with the admin password.</p>
+
+      <label class="login-label" for="login-password">Password</label>
+      <input
+        type="password"
+        id="login-password"
+        name="password"
+        autocomplete="current-password"
+        required
+        autofocus
+      >
+
+      <button type="submit" class="login-submit">Sign in</button>
+      <p id="login-error" class="login-error" hidden></p>
+    </form>
+  </section>
+
+  <!-- ───────── Main shell ───────── -->
+  <section id="shell-view" class="shell-view" hidden>
+    <header class="shell-header">
+      <h1 class="shell-title">DeafHive admin</h1>
+      <div class="shell-meta">
+        <span id="session-info" class="session-info"></span>
+        <button id="logout-btn" type="button" class="logout-btn">Sign out</button>
+      </div>
+    </header>
+
+    <nav class="tab-strip" role="tablist" aria-label="Admin tables">
+      <button class="tab-btn is-active" data-tab="organisations" role="tab" aria-selected="true">Organisations</button>
+      <button class="tab-btn" data-tab="events" role="tab" aria-selected="false">Events</button>
+      <button class="tab-btn" data-tab="videos" role="tab" aria-selected="false">Videos</button>
+    </nav>
+
+    <div class="toolbar">
+      <label class="toolbar-label" for="status-filter">Status</label>
+      <select id="status-filter" class="status-filter">
+        <option value="all">All</option>
+        <option value="pending">Pending</option>
+        <option value="approved">Approved</option>
+        <option value="rejected">Rejected</option>
+        <option value="draft">Draft</option>
+      </select>
+
+      <span id="row-count" class="row-count" aria-live="polite"></span>
+
+      <button id="refresh-btn" type="button" class="refresh-btn" title="Refresh">↻ Refresh</button>
+    </div>
+
+    <div id="table-wrap" class="table-wrap">
+      <div id="table-empty" class="table-empty" hidden>No rows.</div>
+      <div id="table-error" class="table-error" hidden></div>
+      <div id="table-loading" class="table-loading" hidden>Loading…</div>
+      <table id="data-table" class="data-table" hidden>
+        <thead><tr id="table-head"></tr></thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <script src="admin.js"></script>
+</body>
+</html>

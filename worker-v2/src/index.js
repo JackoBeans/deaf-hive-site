@@ -1,15 +1,26 @@
 // ════════════════════════════════════════════════════════════════════════
 // DeafHive worker-v2 — router
 //
-// Endpoints (Phase 1):
-//   GET  /organisations    — approved orgs from D1, edge-cached
-//   GET  /events           — approved events + joined org name, edge-cached
-//   GET  /videos           — approved videos + joined org name, edge-cached
-//   POST /purge            — clears all three caches (X-Purge-Token header)
-//   GET  /healthz          — { ok, version }
-//   GET  /probe-bindings   — confirms D1 + R2 bindings reachable (Phase 0)
+// Endpoints (Phase 2):
+//   Public (cached):
+//     GET  /organisations          approved orgs from D1, edge-cached
+//     GET  /events                 approved events + joined org name
+//     GET  /videos                 approved videos + joined org name
 //
-// Real admin / submission / upload endpoints land in Phase 2+.
+//   Admin (HMAC bearer token):
+//     POST /admin/login            password → token + expiry
+//     GET  /admin/whoami           verify current token
+//     GET  /admin/organisations    list (?status=pending|approved|…|all)
+//     GET  /admin/events           list
+//     GET  /admin/videos           list
+//
+//   System:
+//     POST /purge                  clears all caches (X-Purge-Token header)
+//     GET  /healthz                { ok, version }
+//     GET  /probe-bindings         confirms D1 + R2 bindings reachable
+//
+// Write endpoints (POST/PUT/DELETE on /admin/*, /submissions/*, /upload)
+// land in Phase 3 onwards.
 // ════════════════════════════════════════════════════════════════════════
 
 import {
@@ -18,8 +29,9 @@ import {
 } from './cors.js';
 import { cachePurge } from './cache.js';
 import { handleRead, READ_PATHS } from './reads.js';
+import { handleAdmin } from './admin.js';
 
-const VERSION = '0.2.0-phase1';
+const VERSION = '0.3.0-phase2';
 
 // ── Phase 0 probes (kept for ongoing health checks) ────────────────────
 
@@ -104,6 +116,10 @@ export default {
 
     if (request.method === 'GET' && READ_PATHS.includes(url.pathname)) {
       return handleRead(request, env, ctx, url, origin);
+    }
+
+    if (url.pathname.startsWith('/admin/')) {
+      return handleAdmin(request, env, url, origin);
     }
 
     return jsonResponse(

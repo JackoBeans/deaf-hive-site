@@ -35,7 +35,12 @@ bucket_name = "deafhive-images"
 [vars]
 # Edge-cache TTL for /organisations, /events, /videos (seconds)
 CACHE_TTL_SECONDS = "3600"
-# CORS allowlist (comma-separated, no spaces)
-ALLOWED_ORIGINS = "https://deafhive.online"
+# CORS allowlist (comma-separated, no spaces).
+# localhost:4423 is for local admin/submit UI dev against this worker;
+# remove before cutover. Note: admin endpoints require a bearer token
+# regardless of origin, so leaving localhost in the allowlist is not a
+# vulnerability — CORS only controls which origin a browser will deliver
+# the response to, not whether the worker processes the request.
+ALLOWED_ORIGINS = "https://deafhive.online,http://localhost:4423"
 # Public-facing base URL for R2-hosted assets
 MEDIA_BASE_URL = "https://media.deafhive.online"
