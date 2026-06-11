@@ -62,11 +62,11 @@ const SQL_OUT_PATH = 'worker-v2/.migration-data.sql';
 // If Mark has renamed a field in Airtable, edit one constant here.
 const ORG = {
   status:        'Status',
-  name:          'Organisation name',
+  name:          'Name',
   logo:          'Image(s)',
   website:       'Website',
   emailPublic:   'Contact (public)',
-  about:         'Organisation / Service - Description',
+  about:         'Description',
   address:       'Organisation address',
   postcode:      'Organisation postcode',
   categoryTypes: 'Category Type',
@@ -156,6 +156,12 @@ async function fetchAirtableAll(token, tableId) {
     offset = data.offset || null;
   } while (offset);
   return records;
+}
+
+function logUniqueFieldNames(label, records) {
+  const all = new Set();
+  for (const r of records) for (const k of Object.keys(r.fields || {})) all.add(k);
+  log(`  Field names seen across ${records.length} ${label}: ${[...all].sort().join(', ')}`);
 }
 
 function pickFirstAttachment(fields, fieldName) {
@@ -253,8 +259,10 @@ async function main() {
     process.exit(1);
   }
 
-  // Print one record's keys so Mark can spot field-name mismatches early
-  log(`  Field names on first record: ${Object.keys(orgRecords[0].fields).join(', ')}`);
+  // Print the UNION of every field name across every org record. Airtable
+  // omits empty fields per record, so first-record-only inspection misses
+  // fields like address/logo that the first record happens not to fill.
+  logUniqueFieldNames('orgs', orgRecords);
 
   const orgs = [];                  // {d1Id, atRecId, atName, fields..., logo_r2_key}
   const orgIdByAtRecId = new Map(); // for events FK resolution by record ID
@@ -308,6 +316,7 @@ async function main() {
   log('\n▶ Fetching events from Airtable…');
   const eventRecords = await fetchAirtableAll(token, EVENTS_TABLE_ID);
   log(`  Got ${eventRecords.length} events.`);
+  logUniqueFieldNames('events', eventRecords);
 
   const events = [];
   let nextEventId = 1;
