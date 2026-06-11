@@ -67,8 +67,7 @@ const ORG = {
   website:       'Website',
   emailPublic:   'Contact (public)',
   about:         'Description',
-  address:       'Organisation address',
-  postcode:      'Organisation postcode',
+  address:       'Organisation Address',
   categoryTypes: 'Category Type',
   ageCategories: 'Age Category',
 };
@@ -127,6 +126,27 @@ function sqlInt(v) {
   return Number.isFinite(n) ? String(n) : 'NULL';
 }
 function isoNow() { return Math.floor(Date.now() / 1000); }
+
+// Airtable can return values in shapes that aren't plain strings:
+//   - Long text / single-line text → string
+//   - AI-generated text field → { value: '...', state: '...', isStale: bool }
+//   - Empty cell → key not present (handled by caller)
+// This helper coerces all known shapes to a trimmed string-or-null so
+// caller code doesn't have to special-case every field.
+function stringOrNull(v) {
+  if (v == null) return null;
+  if (typeof v === 'string') {
+    const t = v.trim();
+    return t === '' ? null : t;
+  }
+  if (typeof v === 'object') {
+    // AI text field shape
+    if (typeof v.value === 'string') return stringOrNull(v.value);
+    // Unknown object — log + skip (will surface in admin as null)
+    return null;
+  }
+  return String(v);
+}
 
 function extFromMime(mime) {
   switch ((mime || '').toLowerCase()) {
@@ -204,16 +224,6 @@ function r2KeyFor(folder, mime) {
   return `${folder}/${ymPrefix()}/${randomUUID()}.${extFromMime(mime)}`;
 }
 
-// Composite address from two Airtable fields (the schema has a separate
-// "Organisation postcode" alongside "Organisation address"). D1 stores
-// one address field, so we concat with a comma if both are present.
-function composeAddress(addr, postcode) {
-  const a = (addr || '').trim();
-  const p = (postcode || '').trim();
-  if (a && p) return `${a}, ${p}`;
-  return a || p || null;
-}
-
 // ── Main ───────────────────────────────────────────────────────────────
 
 async function main() {
@@ -271,7 +281,7 @@ async function main() {
   let nextOrgId = 1;
   for (const rec of orgRecords) {
     const f = rec.fields;
-    const name = (f[ORG.name] || '').trim();
+    const name = stringOrNull(f[ORG.name]);
     if (!name) {
       warn(`Org record ${rec.id} has no Name — skipping.`);
       continue;
@@ -298,10 +308,10 @@ async function main() {
       atRecId: rec.id,
       name,
       status:        mapStatus(f[ORG.status]),
-      website:       (f[ORG.website]      || '').trim() || null,
-      email_public:  (f[ORG.emailPublic]  || '').trim() || null,
-      about:         (f[ORG.about]        || '').trim() || null,
-      address:       composeAddress(f[ORG.address], f[ORG.postcode]),
+      website:       stringOrNull(f[ORG.website]),
+      email_public:  stringOrNull(f[ORG.emailPublic]),
+      about:         stringOrNull(f[ORG.about]),
+      address:       stringOrNull(f[ORG.address]),
       category_types: Array.isArray(f[ORG.categoryTypes]) ? f[ORG.categoryTypes] : [],
       age_categories: Array.isArray(f[ORG.ageCategories]) ? f[ORG.ageCategories] : [],
       logo_r2_key:   logoKey,
@@ -323,12 +333,12 @@ async function main() {
   let unmatchedOrgRefs = 0;
   for (const rec of eventRecords) {
     const f = rec.fields;
-    const name = (f[EVT.name] || '').trim();
+    const name = stringOrNull(f[EVT.name]);
     if (!name) {
       warn(`Event record ${rec.id} has no Name — skipping.`);
       continue;
     }
-    const date = (f[EVT.date] || '').trim();
+    const date = stringOrNull(f[EVT.date]);
     if (!date) {
       warn(`Event "${name}" has no Date — skipping.`);
       continue;
@@ -371,8 +381,8 @@ async function main() {
       status:          mapStatus(f[EVT.status]),
       organisation_id: organisationId,
       event_date:      date,
-      address:         (f[EVT.address] || '').trim() || null,
-      details:         (f[EVT.details] || '').trim() || null,
+      address:         stringOrNull(f[EVT.address]),
+      details:         stringOrNull(f[EVT.details]),
       poster_r2_key:   posterKey,
     });
   }
