@@ -171,6 +171,24 @@
     }
   }
 
+  // ── Chip multi-select visual state ──────────────────────────────────
+  // The chip is a <label> wrapping a hidden checkbox. Clicking the label
+  // flips the checkbox natively (and chipValues() reads it correctly at
+  // submit time), but the parent label's .is-checked class — which drives
+  // the highlighted style — needs to be toggled by JS.
+
+  (function wireChips() {
+    for (const cb of $form.querySelectorAll('.chip input[type="checkbox"]')) {
+      const label = cb.closest('.chip');
+      if (!label) continue;
+      // Sync initial state in case the form is pre-populated.
+      label.classList.toggle('is-checked', cb.checked);
+      cb.addEventListener('change', () => {
+        label.classList.toggle('is-checked', cb.checked);
+      });
+    }
+  }());
+
   // ── Image upload (org logo + event poster) ──────────────────────────
 
   let pendingUploadKey = null;
