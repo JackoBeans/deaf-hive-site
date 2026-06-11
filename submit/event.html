@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>DeafHive — Submit an event</title>
+  <link rel="stylesheet" href="submit.css">
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback" async defer></script>
+</head>
+<body data-kind="event">
+<main class="page">
+  <header class="page-header">
+    <h1 class="page-title">Submit an event</h1>
+    <p class="page-lede">Got a BSL event coming up? Submit it for review and we'll add it to the DeafHive calendar.</p>
+    <nav class="page-nav">
+      <a href="organisation.html">Organisation</a>
+      <a href="event.html" class="is-active">Event</a>
+      <a href="video.html">Video</a>
+    </nav>
+  </header>
+
+  <div id="banner-ok"  class="banner banner-ok"  hidden></div>
+  <div id="banner-err" class="banner banner-err" hidden></div>
+
+  <form id="submit-form" class="form-card" autocomplete="off" novalidate>
+    <div class="honeypot" aria-hidden="true">
+      <label>Email (do not fill) <input type="text" name="hp_email" tabindex="-1" autocomplete="off"></label>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="f-name">Event name <span class="field-required">*</span></label>
+      <input id="f-name" name="name" type="text" required>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="f-date">Date and time <span class="field-required">*</span></label>
+      <input id="f-date" name="event_date" type="datetime-local" required>
+      <span class="field-hint">Pick the start time. We'll display it in UK time.</span>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="f-address">Address or venue</label>
+      <input id="f-address" name="address" type="text" placeholder="Venue name, street, town">
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="f-details">Details</label>
+      <textarea id="f-details" name="details" placeholder="Who's it for, what's happening, how to join…"></textarea>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="upload-file">Poster (optional)</label>
+      <div class="upload-widget">
+        <img id="upload-preview" class="upload-preview" alt="">
+        <input id="upload-file" type="file" accept="image/*">
+        <span id="upload-status" class="upload-status">(no file)</span>
+      </div>
+      <span class="field-hint">PNG or JPG, ≤ 5 MB. You'll need to complete the CAPTCHA below before uploading.</span>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="f-submitter">Your contact email (private)</label>
+      <input id="f-submitter" name="submitter_email" type="email">
+      <span class="field-hint">Only used if we need to ask you a question. Not published.</span>
+    </div>
+
+    <div class="turnstile-wrap">
+      <div id="turnstile-widget"></div>
+    </div>
+
+    <button id="submit-btn" type="submit" class="btn">Submit for review</button>
+  </form>
+
+  <p class="page-nav"><a href="/">← Back to deafhive.online</a></p>
+</main>
+
+<script src="submit.js"></script>
+</body>
+</html>

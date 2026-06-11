@@ -10,9 +10,17 @@
 //   Admin (HMAC bearer token):
 //     POST /admin/login            password → token + expiry
 //     GET  /admin/whoami           verify current token
-//     GET  /admin/organisations    list (?status=pending|approved|…|all)
-//     GET  /admin/events           list
-//     GET  /admin/videos           list
+//     GET/POST/PUT/DELETE /admin/{organisations,events,videos}[/:id]
+//     POST /admin/{table}/:id/status   flip status (auto-purges cache)
+//     POST /admin/upload                multipart image/video → R2
+//     DELETE /admin/upload/{key}
+//     GET  /admin/audit?limit=50
+//
+//   Public submissions (Turnstile + rate-limit):
+//     POST /submissions/organisation
+//     POST /submissions/event
+//     POST /submissions/video
+//     POST /submissions/upload     multipart image → R2 under pending/
 //
 //   System:
 //     POST /purge                  clears all caches (X-Purge-Token header)
@@ -30,8 +38,9 @@ import {
 import { cachePurge } from './cache.js';
 import { handleRead, READ_PATHS } from './reads.js';
 import { handleAdmin } from './admin.js';
+import { handleSubmissions } from './submissions.js';
 
-const VERSION = '0.4.0-phase3';
+const VERSION = '0.5.0-phase4';
 
 // ── Phase 0 probes (kept for ongoing health checks) ────────────────────
 
@@ -120,6 +129,10 @@ export default {
 
     if (url.pathname.startsWith('/admin/')) {
       return handleAdmin(request, env, url, origin);
+    }
+
+    if (url.pathname.startsWith('/submissions/')) {
+      return handleSubmissions(request, env, ctx, url, origin);
     }
 
     return jsonResponse(

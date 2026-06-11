@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>DeafHive — Submit a video</title>
+  <link rel="stylesheet" href="submit.css">
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback" async defer></script>
+</head>
+<body data-kind="video">
+<main class="page">
+  <header class="page-header">
+    <h1 class="page-title">Submit a video</h1>
+    <p class="page-lede">Share a BSL video on YouTube? Submit the link and we'll add it to the DeafHive videos page after review.</p>
+    <nav class="page-nav">
+      <a href="organisation.html">Organisation</a>
+      <a href="event.html">Event</a>
+      <a href="video.html" class="is-active">Video</a>
+    </nav>
+  </header>
+
+  <div id="banner-ok"  class="banner banner-ok"  hidden></div>
+  <div id="banner-err" class="banner banner-err" hidden></div>
+
+  <form id="submit-form" class="form-card" autocomplete="off" novalidate>
+    <div class="honeypot" aria-hidden="true">
+      <label>Email (do not fill) <input type="text" name="hp_email" tabindex="-1" autocomplete="off"></label>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="f-name">Video title <span class="field-required">*</span></label>
+      <input id="f-name" name="name" type="text" required>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="f-youtube">YouTube URL <span class="field-required">*</span></label>
+      <input id="f-youtube" name="youtube_url" type="url" required placeholder="https://www.youtube.com/watch?v=…">
+      <span class="field-hint">Public submissions are YouTube-link only. Direct video uploads can be requested via the DeafHive team.</span>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="f-description">Description</label>
+      <textarea id="f-description" name="description" placeholder="A short summary of the video."></textarea>
+    </div>
+
+    <div class="field">
+      <label class="field-label" for="f-submitter">Your contact email (private)</label>
+      <input id="f-submitter" name="submitter_email" type="email">
+      <span class="field-hint">Only used if we need to ask you a question. Not published.</span>
+    </div>
+
+    <div class="turnstile-wrap">
+      <div id="turnstile-widget"></div>
+    </div>
+
+    <button id="submit-btn" type="submit" class="btn">Submit for review</button>
+  </form>
+
+  <p class="page-nav"><a href="/">← Back to deafhive.online</a></p>
+</main>
+
+<script src="submit.js"></script>
+</body>
+</html>

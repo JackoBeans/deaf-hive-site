@@ -1,0 +1,86 @@
+// ════════════════════════════════════════════════════════════════════════
+// IP-bucket rate limiter, persisted in D1 (submission_quota table).
+//
+// 3 submissions per IP per rolling 1-hour window.
+//
+// The IP is SHA-256-hashed before storage so we never persist PII — the
+// hash is one-way and Cloudflare strips IPs from logs by default. The
+// salt-via-HMAC pattern isn't worth it here: the input space is small
+// (~4 billion IPv4s + a lot of IPv6s) and the only attack is "given the
+// hash, recover the IP", which Cloudflare can already do upstream.
+//
+// Concurrency note: D1 is serialised per-database, so the read-then-
+// write here can race against itself only at very high RPS — for a
+// hobby community site, the worst-case is "an attacker sneaks one
+// extra submission past the cap", which is fine.
+// ════════════════════════════════════════════════════════════════════════
+
+const WINDOW_SECONDS = 60 * 60;   // 1 hour
+const MAX_PER_WINDOW = 3;
+
+async function sha256Hex(s) {
+  const bytes = new TextEncoder().encode(s);
+  const hash  = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function clientIp(request) {
+  // Cloudflare always sets this; fall back to a constant if testing
+  // locally with `wrangler dev` so the hash is at least stable.
+  return request.headers.get('cf-connecting-ip') || '0.0.0.0';
+}
+
+const NOW = () => Math.floor(Date.now() / 1000);
+
+// Returns { ok: true } if the submission is allowed (and increments the
+// counter), or { ok: false, retry_after } if the cap is reached.
+export async function checkAndCount(env, request) {
+  const ipHash = await sha256Hex(clientIp(request));
+  const now    = NOW();
+
+  const row = await env.DB
+    .prepare('SELECT count, window_start FROM submission_quota WHERE ip_hash = ?')
+    .bind(ipHash).first();
+
+  // Fresh window if nothing exists OR previous window expired.
+  if (!row || (now - row.window_start) >= WINDOW_SECONDS) {
+    await env.DB
+      .prepare(
+        `INSERT INTO submission_quota (ip_hash, count, window_start)
+         VALUES (?, 1, ?)
+         ON CONFLICT(ip_hash) DO UPDATE
+           SET count = 1, window_start = excluded.window_start`,
+      )
+      .bind(ipHash, now).run();
+    return { ok: true };
+  }
+
+  // Same window — check the cap before counting.
+  if (row.count >= MAX_PER_WINDOW) {
+    return {
+      ok: false,
+      retry_after: WINDOW_SECONDS - (now - row.window_start),
+    };
+  }
+
+  await env.DB
+    .prepare('UPDATE submission_quota SET count = count + 1 WHERE ip_hash = ?')
+    .bind(ipHash).run();
+  return { ok: true };
+}
+
+// Periodic janitor — purges rows whose window has expired. Cheap to
+// call from inside any submission handler (uses waitUntil) so the
+// table doesn't grow unbounded. Skipped at random to spread load.
+export function sweepExpired(env, ctx) {
+  // 1-in-20 sample so we only sweep occasionally without using
+  // Math.random in scripts that run in the strict workflow runtime.
+  // (Workers `fetch()` is not scoped, so Math.random IS available here.)
+  if (Math.random() > 0.05) return;
+  const cutoff = NOW() - WINDOW_SECONDS;
+  ctx.waitUntil(
+    env.DB
+      .prepare('DELETE FROM submission_quota WHERE window_start < ?')
+      .bind(cutoff).run().catch(() => {}),
+  );
+}

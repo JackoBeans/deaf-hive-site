@@ -1,0 +1,237 @@
+/* ════════════════════════════════════════════════════════════════════════
+   Submission forms — shared styles. Three pages (organisation, event,
+   video) use this CSS. Page-specific markup differences are limited to
+   which <fieldset>s appear.
+   ════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --bg:          #ffffff;
+  --bg-elevated: #f7f8fa;
+  --text:        #1c1f23;
+  --text-muted:  #5a6470;
+  --border:      #e4e7eb;
+  --border-strong: #c9ced6;
+  --accent:      #0b5cab;
+  --accent-hover:#0a4d8c;
+  --ok-bg:       #e1f5e6;
+  --ok-fg:       #1f6f37;
+  --err-bg:      #fbe1e3;
+  --err-fg:      #94232a;
+  --shadow:      0 1px 2px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.06);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:          #15171b;
+    --bg-elevated: #1c1f24;
+    --text:        #e6e8eb;
+    --text-muted:  #969ba3;
+    --border:      #2c3038;
+    --border-strong: #3a3f48;
+    --accent:      #6db4ff;
+    --accent-hover:#94c9ff;
+    --ok-bg:       #143d22;
+    --ok-fg:       #6fdc8c;
+    --err-bg:      #4a1a1f;
+    --err-fg:      #ff8a92;
+    --shadow:      0 1px 2px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.3);
+  }
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html, body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+}
+
+.page {
+  max-width: 38rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem 1.25rem;
+}
+
+.page-header {
+  padding: 0.5rem 0 1.5rem 0;
+}
+
+.page-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.page-lede {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9375rem;
+}
+
+.page-nav {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+}
+
+.page-nav a {
+  color: var(--accent);
+  text-decoration: none;
+  margin-right: 0.75rem;
+}
+.page-nav a:hover  { text-decoration: underline; }
+.page-nav a.is-active { font-weight: 600; color: var(--text); }
+
+/* ── Form ─────────────────────────────────────────────────────────── */
+
+.form-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 1.5rem 1.25rem;
+  box-shadow: var(--shadow);
+}
+
+.field {
+  display: grid;
+  gap: 0.375rem;
+  margin-bottom: 1.125rem;
+}
+
+.field-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.field-required {
+  color: var(--err-fg);
+  margin-left: 0.125rem;
+}
+
+.field-hint {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
+
+.field input[type="text"],
+.field input[type="email"],
+.field input[type="url"],
+.field input[type="datetime-local"],
+.field input[type="file"],
+.field textarea,
+.field select {
+  font-family: inherit;
+  font-size: 1rem;
+  padding: 0.625rem 0.75rem;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 0.375rem;
+  width: 100%;
+}
+
+.field textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.field input:focus,
+.field textarea:focus,
+.field select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+/* Honeypot — visually + functionally hidden, but DOM-present so bots fill it. */
+.honeypot {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Chip multi-select */
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  border-radius: 999px;
+  cursor: pointer;
+  user-select: none;
+}
+.chip input { position: absolute; opacity: 0; pointer-events: none; }
+.chip.is-checked {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ── Buttons ───────────────────────────────────────────────────────── */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.75rem 1.125rem;
+  font-family: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--accent);
+  border: 0;
+  border-radius: 0.375rem;
+  cursor: pointer;
+}
+.btn:hover { background: var(--accent-hover); }
+.btn:disabled { opacity: 0.55; cursor: progress; }
+
+/* ── Status banners ────────────────────────────────────────────────── */
+
+.banner {
+  padding: 0.875rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+  margin-bottom: 1.25rem;
+}
+.banner-ok  { color: var(--ok-fg);  background: var(--ok-bg); }
+.banner-err { color: var(--err-fg); background: var(--err-bg); }
+
+/* ── Turnstile widget — center, breathe ────────────────────────────── */
+
+.turnstile-wrap {
+  margin: 1rem 0 1.25rem 0;
+  display: flex;
+  justify-content: center;
+}
+
+/* ── Upload widget ─────────────────────────────────────────────────── */
+
+.upload-widget { display: grid; gap: 0.5rem; }
+.upload-preview {
+  width: 96px;
+  height: 96px;
+  border-radius: 0.375rem;
+  object-fit: cover;
+  background: var(--bg);
+  border: 1px solid var(--border);
+}
+.upload-status { font-size: 0.8125rem; color: var(--text-muted); }
