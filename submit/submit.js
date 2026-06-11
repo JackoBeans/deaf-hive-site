@@ -16,10 +16,9 @@
 
   const WORKER_URL = 'https://directory-proxy-v2.silent-term-d0e4.workers.dev';
 
-  // REPLACE this with the SITE KEY from your Cloudflare Turnstile widget.
-  // The site key is PUBLIC (it gets embedded in the page) — the secret
-  // key is what lives on the worker as TURNSTILE_SECRET.
-  const TURNSTILE_SITE_KEY = 'REPLACE_WITH_TURNSTILE_SITE_KEY';
+  // Cloudflare Turnstile SITE key — public, fine to commit. The
+  // matching SECRET key lives on the worker as TURNSTILE_SECRET.
+  const TURNSTILE_SITE_KEY = '0x4AAAAAADi5_wIl1h2QkOJV';
 
   const ENDPOINTS = {
     organisation: '/submissions/organisation',
@@ -48,15 +47,17 @@
   const $turnstile = document.getElementById('turnstile-widget');
 
   // ── Turnstile setup ─────────────────────────────────────────────────
-  // The Turnstile JS is loaded as <script async src="…">. It calls
-  // window.onloadTurnstileCallback when ready. We render the widget
-  // explicitly so we can read the token back at submit time.
+  // The Turnstile JS is loaded as <script async src="…"> in the page.
+  // It races with this file: on a fast connection Turnstile loads
+  // first, so any onloadTurnstileCallback we tried to register here
+  // would be too late. Instead we poll for window.turnstile to appear,
+  // then render explicitly so we can read the token back at submit.
 
   let turnstileWidgetId = null;
   let lastToken = '';
 
-  window.onloadTurnstileCallback = function () {
-    if (!window.turnstile || !$turnstile) return;
+  function renderTurnstile() {
+    if (!$turnstile) return;
     if (TURNSTILE_SITE_KEY === 'REPLACE_WITH_TURNSTILE_SITE_KEY') {
       $turnstile.textContent = 'Turnstile site key not configured.';
       return;
@@ -67,7 +68,21 @@
       'expired-callback': () => { lastToken = ''; },
       'error-callback':   () => { lastToken = ''; },
     });
-  };
+  }
+
+  // Wait up to ~10s for window.turnstile, then render. 100ms polls.
+  let turnstileTries = 0;
+  (function waitForTurnstile() {
+    if (window.turnstile && typeof window.turnstile.render === 'function') {
+      renderTurnstile();
+      return;
+    }
+    if (++turnstileTries > 100) {
+      if ($turnstile) $turnstile.textContent = 'CAPTCHA failed to load. Refresh to try again.';
+      return;
+    }
+    setTimeout(waitForTurnstile, 100);
+  }());
 
   function resetTurnstile() {
     if (window.turnstile && turnstileWidgetId !== null) {
