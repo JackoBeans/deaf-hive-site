@@ -31,7 +31,7 @@ import { cachePurge } from './cache.js';
 import { handleRead, READ_PATHS } from './reads.js';
 import { handleAdmin } from './admin.js';
 
-const VERSION = '0.3.0-phase2';
+const VERSION = '0.4.0-phase3';
 
 // ── Phase 0 probes (kept for ongoing health checks) ────────────────────
 
