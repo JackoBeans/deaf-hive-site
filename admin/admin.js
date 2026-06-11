@@ -807,6 +807,14 @@
     e.preventDefault();
     if (!editor) return;
 
+    // Editing with no changes → treat as cancel. Avoids the server's
+    // no_op error and matches user expectation ("Save with nothing
+    // changed" = close).
+    if (editor.mode === 'edit' && Object.keys(editor.pendingFields).length === 0) {
+      closeEditModal();
+      return;
+    }
+
     $editError.hidden = true;
     $editSave.disabled = true;
 
