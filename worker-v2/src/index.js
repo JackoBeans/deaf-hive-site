@@ -7,13 +7,17 @@
 //     GET  /events                 approved events + joined org name
 //     GET  /videos                 approved videos + joined org name
 //
-//   Admin (HMAC bearer token):
-//     POST /admin/login            password → token + expiry
-//     GET  /admin/whoami           verify current token
+//   Admin (HMAC bearer token, multi-user — see users table):
+//     POST /admin/login            {email, password} → token + user
+//     GET  /admin/whoami           verify current token + user state
 //     GET/POST/PUT/DELETE /admin/{organisations,events,videos}[/:id]
 //     POST /admin/{table}/:id/status   flip status (auto-purges cache)
 //     POST /admin/upload                multipart image/video → R2
 //     DELETE /admin/upload/{key}
+//     GET    /admin/users          list (any auth)
+//     POST   /admin/users          create (owner only)
+//     PATCH  /admin/users/:id      update (owner OR self)
+//     DELETE /admin/users/:id      delete (owner only, blocks self-delete)
 //     GET  /admin/audit?limit=50
 //
 //   Public submissions (Turnstile + rate-limit):
@@ -40,7 +44,7 @@ import { handleRead, READ_PATHS } from './reads.js';
 import { handleAdmin } from './admin.js';
 import { handleSubmissions } from './submissions.js';
 
-const VERSION = '0.5.0-phase4';
+const VERSION = '0.6.0-multiuser';
 
 // ── Phase 0 probes (kept for ongoing health checks) ────────────────────
 
@@ -128,7 +132,7 @@ export default {
     }
 
     if (url.pathname.startsWith('/admin/')) {
-      return handleAdmin(request, env, url, origin);
+      return handleAdmin(request, env, ctx, url, origin);
     }
 
     if (url.pathname.startsWith('/submissions/')) {

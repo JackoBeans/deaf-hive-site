@@ -27,7 +27,7 @@
 import { jsonResponse } from './cors.js';
 import { cachePurge } from './cache.js';
 import {
-  verifyPassword,
+  verifyPasswordHash,
   issueToken,
   verifyToken,
   bearerFromRequest,
@@ -51,21 +51,37 @@ import {
   deleteVideo,
   writeAuditEntry,
   fetchRecentAuditEntries,
+  fetchUserById,
+  fetchUserByEmailWithHash,
+  touchLastLogin,
 } from './db.js';
 import { handleUpload, handleUploadDelete } from './images.js';
+import { handleUsers } from './users.js';
 
 import { READ_PATHS } from './reads.js';
 
 const STATUS_VALUES = ['pending', 'approved', 'rejected', 'draft'];
 
 // ── Auth gate ──────────────────────────────────────────────────────────
+// Returns { resp: null, user, expires } on success — `user` is the
+// public shape from fetchUserById (no password_hash). Returns 401 if
+// the token is bad/expired OR the user has been deleted / disabled
+// since the token was issued, so role + status changes take effect
+// on the next admin click.
 
 async function requireAuth(request, env, origin) {
   const token = bearerFromRequest(request);
   if (!token) return { resp: jsonResponse({ error: 'unauthorised' }, 401, env, origin) };
+
   const r = await verifyToken(env, token);
   if (!r.ok) return { resp: jsonResponse({ error: r.error || 'unauthorised' }, 401, env, origin) };
-  return { resp: null, actor: r.actor, expires: r.expires };
+
+  const user = await fetchUserById(env, r.user_id);
+  if (!user) return { resp: jsonResponse({ error: 'user_not_found' }, 401, env, origin) };
+  if (user.fields.status !== 'active') {
+    return { resp: jsonResponse({ error: 'user_disabled' }, 401, env, origin) };
+  }
+  return { resp: null, user, expires: r.expires };
 }
 
 // ── Per-table function map ─────────────────────────────────────────────
@@ -111,27 +127,53 @@ async function purgePublicCaches(env, url) {
 
 // ── Auth endpoints ─────────────────────────────────────────────────────
 
-async function handleLogin(request, env, origin) {
-  if (!env.ADMIN_PASSWORD || !env.ADMIN_TOKEN_SECRET) {
+async function handleLogin(request, env, ctx, origin) {
+  if (!env.ADMIN_TOKEN_SECRET) {
     return jsonResponse({ error: 'auth_not_configured' }, 503, env, origin);
   }
   let body;
   try { body = await request.json(); }
   catch { return jsonResponse({ error: 'invalid_json' }, 400, env, origin); }
 
+  const email    = body && typeof body.email === 'string'    ? body.email.trim().toLowerCase() : '';
   const password = body && typeof body.password === 'string' ? body.password : '';
-  const ok = await verifyPassword(env, password);
-  if (!ok) return jsonResponse({ error: 'unauthorised' }, 401, env, origin);
 
-  const token = await issueToken(env, 'admin');
+  // Always run verifyPasswordHash — even when the user doesn't exist,
+  // we run a dummy PBKDF2 inside the helper so the response timing
+  // doesn't leak account existence.
+  const userRow = email ? await fetchUserByEmailWithHash(env, email) : null;
+  const ok = await verifyPasswordHash(password, userRow?.password_hash || '');
+  if (!ok || !userRow || userRow.status !== 'active') {
+    return jsonResponse({ error: 'unauthorised' }, 401, env, origin);
+  }
+
+  const token = await issueToken(env, userRow.id);
+  // Extract expires from the token: u<id>.<expires>.<sig>
   const expires = Number(token.split('.')[1]);
-  return jsonResponse({ token, expires, actor: 'admin' }, 200, env, origin);
+
+  // Don't block the response on the last-login bump.
+  ctx.waitUntil(touchLastLogin(env, userRow.id));
+
+  return jsonResponse({
+    token,
+    expires,
+    user: {
+      id:           userRow.id,
+      email:        userRow.email,
+      role:         userRow.role,
+      display_name: userRow.display_name ?? null,
+    },
+  }, 200, env, origin);
 }
 
 async function handleWhoami(request, env, origin) {
   const auth = await requireAuth(request, env, origin);
   if (auth.resp) return auth.resp;
-  return jsonResponse({ ok: true, actor: auth.actor, expires: auth.expires }, 200, env, origin);
+  return jsonResponse({
+    ok: true,
+    user: auth.user,
+    expires: auth.expires,
+  }, 200, env, origin);
 }
 
 // ── List / detail ──────────────────────────────────────────────────────
@@ -197,7 +239,7 @@ async function handleCreate(request, env, url, origin, table) {
     return jsonResponse({ error: 'create_failed', message: String(err?.message || err) }, 400, env, origin);
   }
   await writeAuditEntry(env, {
-    actor: auth.actor, action: 'create', entity: ops.entity, entity_id: id,
+    actor: auth.user.fields.email, action: 'create', entity: ops.entity, entity_id: id,
     diff: { after: fields },
   });
   // New approved row → purge cache.
@@ -236,7 +278,7 @@ async function handleUpdate(request, env, url, origin, table, id) {
 
   const after = await ops.detail(env, id);
   await writeAuditEntry(env, {
-    actor: auth.actor, action: 'update', entity: ops.entity, entity_id: id,
+    actor: auth.user.fields.email, action: 'update', entity: ops.entity, entity_id: id,
     diff: diffFields(before.fields, after.fields, Object.keys(fields)),
   });
   // Touched a row that's approved (or just became approved) → purge.
@@ -261,7 +303,7 @@ async function handleDelete(request, env, url, origin, table, id) {
   }
 
   await writeAuditEntry(env, {
-    actor: auth.actor, action: 'delete', entity: ops.entity, entity_id: id,
+    actor: auth.user.fields.email, action: 'delete', entity: ops.entity, entity_id: id,
     diff: { before: before.fields },
   });
   if (before.fields.status === 'approved') await purgePublicCaches(env, url);
@@ -310,7 +352,7 @@ async function handleStatusChange(request, env, url, origin, table, id) {
     : 'status_change';
 
   await writeAuditEntry(env, {
-    actor: auth.actor, action, entity: ops.entity, entity_id: id,
+    actor: auth.user.fields.email, action, entity: ops.entity, entity_id: id,
     diff: { before: { status: before.fields.status }, after: { status: next } },
   });
 
@@ -347,9 +389,9 @@ function diffFields(before, after, keys) {
 
 // ── Router ─────────────────────────────────────────────────────────────
 
-export async function handleAdmin(request, env, url, origin) {
+export async function handleAdmin(request, env, ctx, url, origin) {
   // Auth
-  if (request.method === 'POST' && url.pathname === '/admin/login')   return handleLogin(request, env, origin);
+  if (request.method === 'POST' && url.pathname === '/admin/login')   return handleLogin(request, env, ctx, origin);
   if (request.method === 'GET'  && url.pathname === '/admin/whoami')  return handleWhoami(request, env, origin);
   if (request.method === 'GET'  && url.pathname === '/admin/audit')   return handleAudit(request, env, origin);
 
@@ -357,6 +399,13 @@ export async function handleAdmin(request, env, url, origin) {
   if (request.method === 'POST'   && url.pathname === '/admin/upload') return handleUpload(request, env, origin);
   if (request.method === 'DELETE' && url.pathname.startsWith('/admin/upload/')) {
     return handleUploadDelete(request, env, url, origin);
+  }
+
+  // /admin/users* — auth runs here, then dispatch with the auth result.
+  if (url.pathname === '/admin/users' || url.pathname.startsWith('/admin/users/')) {
+    const auth = await requireAuth(request, env, origin);
+    if (auth.resp) return auth.resp;
+    return handleUsers(request, env, url, origin, auth);
   }
 
   // /admin/<table> and /admin/<table>/<id>[/status]

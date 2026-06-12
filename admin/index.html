@@ -11,18 +11,27 @@
 
   <!-- ───────── Login screen ───────── -->
   <section id="login-view" class="login-view" hidden>
-    <form id="login-form" class="login-card" autocomplete="off">
+    <form id="login-form" class="login-card" autocomplete="on">
       <h1 class="login-title">DeafHive admin</h1>
-      <p class="login-help">Sign in with the admin password.</p>
+      <p class="login-help">Sign in with your email and password.</p>
 
-      <label class="login-label" for="login-password">Password</label>
+      <label class="login-label" for="login-email">Email</label>
+      <input
+        type="email"
+        id="login-email"
+        name="email"
+        autocomplete="username"
+        required
+        autofocus
+      >
+
+      <label class="login-label" for="login-password" style="margin-top: 0.75rem;">Password</label>
       <input
         type="password"
         id="login-password"
         name="password"
         autocomplete="current-password"
         required
-        autofocus
       >
 
       <button type="submit" class="login-submit">Sign in</button>
@@ -44,6 +53,7 @@
       <button class="tab-btn is-active" data-tab="organisations" role="tab" aria-selected="true">Organisations</button>
       <button class="tab-btn" data-tab="events" role="tab" aria-selected="false">Events</button>
       <button class="tab-btn" data-tab="videos" role="tab" aria-selected="false">Videos</button>
+      <button class="tab-btn" data-tab="users" role="tab" aria-selected="false" hidden>Users</button>
     </nav>
 
     <div class="toolbar">

@@ -521,6 +521,115 @@ export async function fetchVideoById(env, id) {
 }
 
 // ════════════════════════════════════════════════════════════════════════
+// USERS
+//
+// Schema is created by migrations/0001-add-users.sql. Helpers:
+//   fetchUserById / fetchUserByEmail    — single row, or null
+//   listUsers                           — all users, ordered by email
+//   createUser                          — INSERT, returns new id
+//   updateUser                          — partial update via whitelist
+//   deleteUser                          — hard delete (no soft delete)
+//   touchLastLogin                      — bump last_login_at, fire-and-forget
+//
+// Passwords arrive here already hashed (auth.js handles hashing on the
+// caller side). This module never sees plaintext.
+// ════════════════════════════════════════════════════════════════════════
+
+const USER_PUBLIC_KEYS = `id, email, role, status, display_name,
+  created_at, updated_at, last_login_at`;
+
+const USER_WRITE_KEYS = [
+  'email', 'password_hash', 'role', 'status', 'display_name',
+];
+
+function shapeUserRow(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    fields: {
+      email:         row.email,
+      role:          row.role,
+      status:        row.status,
+      display_name:  row.display_name ?? null,
+      created_at:    row.created_at,
+      updated_at:    row.updated_at,
+      last_login_at: row.last_login_at ?? null,
+    },
+  };
+}
+
+export async function fetchUserById(env, id) {
+  const row = await env.DB.prepare(`SELECT ${USER_PUBLIC_KEYS} FROM users WHERE id = ?`).bind(id).first();
+  return shapeUserRow(row);
+}
+
+// Internal — includes password_hash, used ONLY by login flow.
+export async function fetchUserByEmailWithHash(env, email) {
+  if (typeof email !== 'string') return null;
+  const row = await env.DB
+    .prepare(`SELECT ${USER_PUBLIC_KEYS}, password_hash FROM users WHERE email = ?`)
+    .bind(email.trim().toLowerCase()).first();
+  return row || null;
+}
+
+export async function listUsers(env) {
+  const { results } = await env.DB
+    .prepare(`SELECT ${USER_PUBLIC_KEYS} FROM users ORDER BY email COLLATE NOCASE ASC`)
+    .all();
+  return (results || []).map(shapeUserRow);
+}
+
+export async function createUser(env, fields) {
+  if (!fields.email)         throw new Error('email_required');
+  if (!fields.password_hash) throw new Error('password_required');
+  const now = NOW();
+  const { meta } = await env.DB
+    .prepare(
+      `INSERT INTO users (email, password_hash, role, status, display_name, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .bind(
+      String(fields.email).trim().toLowerCase(),
+      fields.password_hash,
+      fields.role || 'admin',
+      fields.status || 'active',
+      fields.display_name ?? null,
+      now, now,
+    )
+    .run();
+  return meta.last_row_id;
+}
+
+export async function updateUser(env, id, fields) {
+  // email lowercased here too, in case caller sends mixed case.
+  const sanitised = { ...fields };
+  if (typeof sanitised.email === 'string') {
+    sanitised.email = sanitised.email.trim().toLowerCase();
+  }
+  const upd = buildUpdate('users', id, sanitised, USER_WRITE_KEYS);
+  if (!upd) return false;
+  const { meta } = await env.DB.prepare(upd.sql).bind(...upd.binds).run();
+  return meta.changes > 0;
+}
+
+export async function deleteUser(env, id) {
+  const { meta } = await env.DB.prepare('DELETE FROM users WHERE id = ?').bind(id).run();
+  return meta.changes > 0;
+}
+
+// Fire-and-forget: bumps last_login_at on successful login. Errors
+// swallowed — failing to record the timestamp shouldn't block sign-in.
+export async function touchLastLogin(env, id) {
+  try {
+    await env.DB
+      .prepare('UPDATE users SET last_login_at = ? WHERE id = ?')
+      .bind(NOW(), id).run();
+  } catch {
+    /* ignore */
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════════
 // AUDIT LOG
 //
 // One row per mutation. Light-weight: just enough to answer "who changed

@@ -31,7 +31,22 @@
 
   // ── Per-table form schema (drives the edit modal renderer) ─────────
 
+  const ROLE_OPTIONS   = ['owner', 'admin'];
+  const STATUS_USERS   = ['active', 'disabled'];
+
   const SCHEMA = {
+    users: {
+      label: 'User',
+      // Users don't use the upload widget; this stays unused.
+      uploadFolder: 'orgs',
+      fields: [
+        { key: 'email',        label: 'Email',         type: 'email',  required: true },
+        { key: 'display_name', label: 'Display name',  type: 'text' },
+        { key: 'role',         label: 'Role',          type: 'choice', options: ROLE_OPTIONS,    ownerOnly: true },
+        { key: 'status',       label: 'Status',        type: 'choice', options: STATUS_USERS,    ownerOnly: true },
+        { key: 'password',     label: 'Set new password', type: 'password' },
+      ],
+    },
     organisations: {
       label: 'Organisation',
       uploadFolder: 'orgs',
@@ -81,6 +96,7 @@
 
   const $loginView   = document.getElementById('login-view');
   const $loginForm   = document.getElementById('login-form');
+  const $loginEmail  = document.getElementById('login-email');
   const $loginPwd    = document.getElementById('login-password');
   const $loginSubmit = $loginForm.querySelector('button[type="submit"]');
   const $loginError  = document.getElementById('login-error');
@@ -124,6 +140,8 @@
   let editor = null;
   // Cached org list for the org-picker dropdown in events/videos forms.
   let orgCache = null;
+  // Currently signed-in user — populated by login + whoami; null when signed out.
+  let currentUser = null;
 
   // ── Token helpers ───────────────────────────────────────────────────
 
@@ -176,8 +194,9 @@
 
   $loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    const email    = ($loginEmail.value || '').trim();
     const password = $loginPwd.value;
-    if (!password) return;
+    if (!email || !password) return;
 
     $loginSubmit.disabled = true;
     $loginError.hidden = true;
@@ -186,11 +205,11 @@
       const res = await fetch(`${WORKER_URL}/admin/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ email, password }),
       });
 
       if (res.status === 401) {
-        $loginError.textContent = 'Wrong password.';
+        $loginError.textContent = 'Wrong email or password.';
         $loginError.hidden = false;
         return;
       }
@@ -207,6 +226,8 @@
 
       const data = await res.json();
       setToken(data.token);
+      currentUser = data.user;
+      applyRoleVisibility();
       renderSessionInfo(data.expires);
       showShell();
       await loadTable();
@@ -220,19 +241,43 @@
 
   $logoutBtn.addEventListener('click', () => {
     clearToken();
+    currentUser = null;
     showLogin();
   });
 
   // ── Session info ────────────────────────────────────────────────────
 
   function renderSessionInfo(expiresEpoch) {
-    if (!expiresEpoch) {
-      $sessionInfo.textContent = 'Signed in.';
-      return;
+    const parts = [];
+    if (currentUser) {
+      const who = currentUser.display_name || currentUser.email || '';
+      parts.push(`Signed in as ${who} (${currentUser.role})`);
+    } else {
+      parts.push('Signed in.');
     }
-    const d = new Date(expiresEpoch * 1000);
-    const fmt = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' });
-    $sessionInfo.textContent = `Signed in · session until ${fmt.format(d)}`;
+    if (expiresEpoch) {
+      const d = new Date(expiresEpoch * 1000);
+      const fmt = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' });
+      parts.push(`session until ${fmt.format(d)}`);
+    }
+    $sessionInfo.textContent = parts.join(' · ');
+  }
+
+  // Show owner-only UI bits (currently: the Users tab) based on currentUser.
+  function applyRoleVisibility() {
+    const usersBtn = document.querySelector('.tab-btn[data-tab="users"]');
+    if (!usersBtn) return;
+    const isOwner = currentUser?.role === 'owner';
+    usersBtn.hidden = !isOwner;
+    // If a non-owner is somehow stuck on the users tab, kick them home.
+    if (!isOwner && currentTab === 'users') {
+      currentTab = 'organisations';
+      for (const b of $tabStrip.querySelectorAll('.tab-btn')) {
+        const active = b.dataset.tab === 'organisations';
+        b.classList.toggle('is-active', active);
+        b.setAttribute('aria-selected', String(active));
+      }
+    }
   }
 
   // ── Tabs ────────────────────────────────────────────────────────────
@@ -258,6 +303,15 @@
   // ── Table renderer ──────────────────────────────────────────────────
 
   const COLUMNS = {
+    users: [
+      { key: 'email',         label: 'Email',         render: text },
+      { key: 'display_name',  label: 'Name',          render: text },
+      { key: 'role',          label: 'Role',          render: rolePill },
+      { key: 'status',        label: 'Status',        render: badge },
+      { key: 'last_login_at', label: 'Last login',    render: epoch },
+      { key: 'created_at',    label: 'Created',       render: epoch },
+      { key: '__actions',     label: '',              render: userActionsCell },
+    ],
     organisations: [
       { key: 'name',           label: 'Name',     render: text },
       { key: 'status',         label: 'Status',   render: badge },
@@ -304,6 +358,24 @@
     del.textContent = '🗑';
     wrap.appendChild(del);
     return wrap;
+  }
+
+  // User-specific actions cell: same delete affordance, but skip on the
+  // current user's own row (server also blocks self-delete; the UI
+  // mirrors so it's not even surfaced).
+  function userActionsCell(_, rec) {
+    if (currentUser && rec && currentUser.id === rec.id) {
+      return muted('(you)');
+    }
+    return actionsCell();
+  }
+
+  function rolePill(role) {
+    if (!role) return muted('—');
+    const span = document.createElement('span');
+    span.className = `badge is-${role === 'owner' ? 'approved' : 'draft'}`;
+    span.textContent = role;
+    return span;
   }
 
   // Renderers — each returns a DOM node, never an HTML string.
@@ -409,10 +481,18 @@
     setState('loading');
     $rowCount.textContent = '';
 
+    // Users tab has no Status filter; hide the control on that tab.
+    const $statusWrap = $statusFilter.closest('.toolbar')?.querySelector('label[for="status-filter"]') || null;
+    $statusFilter.hidden = currentTab === 'users';
+    if ($statusWrap) $statusWrap.hidden = currentTab === 'users';
+
     const status = $statusFilter.value;
     let data;
     try {
-      const res = await apiCall(`/admin/${currentTab}?status=${encodeURIComponent(status)}`);
+      const path = currentTab === 'users'
+        ? '/admin/users'
+        : `/admin/${currentTab}?status=${encodeURIComponent(status)}`;
+      const res = await apiCall(path);
       if (!res.ok) {
         $tableError.textContent = `Failed to load (${res.status}).`;
         setState('error');
@@ -460,7 +540,7 @@
       for (const col of cols) {
         const td = document.createElement('td');
         const val = rec.fields ? rec.fields[col.key] : undefined;
-        const node = col.render(val);
+        const node = col.render(val, rec);
         if (node) td.appendChild(node);
         tr.appendChild(td);
       }
@@ -581,6 +661,12 @@
   }
 
   function renderField(def, value) {
+    // ownerOnly fields are hidden from non-owners completely. The server
+    // rejects writes from them too; this keeps the UI honest.
+    if (def.ownerOnly && currentUser?.role !== 'owner') {
+      return document.createDocumentFragment();
+    }
+
     const wrap = document.createElement('div');
     wrap.className = `field field-${def.type}`;
 
@@ -674,6 +760,28 @@
       }
       case 'org-picker': {
         input = renderOrgPicker(def, value);
+        break;
+      }
+      case 'password': {
+        input = document.createElement('input');
+        input.type = 'password';
+        input.autocomplete = 'new-password';
+        input.placeholder = editor.mode === 'create' ? '' : '(leave blank to keep current)';
+        wireInput(input, def.key, 'string');
+        break;
+      }
+      case 'choice': {
+        input = document.createElement('select');
+        for (const opt of def.options || []) {
+          const o = document.createElement('option');
+          o.value = opt;
+          o.textContent = opt;
+          if (value === opt) o.selected = true;
+          input.appendChild(o);
+        }
+        input.addEventListener('change', () => {
+          editor.pendingFields[def.key] = input.value;
+        });
         break;
       }
       default: {
@@ -836,7 +944,10 @@
       const path = editor.mode === 'create'
         ? `/admin/${currentTab}`
         : `/admin/${currentTab}/${editor.id}`;
-      const method = editor.mode === 'create' ? 'POST' : 'PUT';
+      // Users use PATCH for updates (partial); orgs/events/videos use PUT.
+      const method = editor.mode === 'create'
+        ? 'POST'
+        : currentTab === 'users' ? 'PATCH' : 'PUT';
       const res = await apiCall(path, {
         method,
         body: JSON.stringify(payload),
@@ -924,6 +1035,10 @@
         return;
       }
       const data = await res.json();
+      // whoami returns { user: { id, fields: {...} }, expires }
+      const u = data.user;
+      currentUser = u ? { id: u.id, ...(u.fields || {}) } : null;
+      applyRoleVisibility();
       renderSessionInfo(data.expires);
       showShell();
       await loadTable();
