@@ -166,12 +166,18 @@ function makeSubmissionHandler({ type, validator, creator, entityName }) {
       );
     }
 
-    await writeAuditEntry(env, {
-      actor: 'public', action: 'create', entity: entityName, entity_id: id,
-      diff: { after: v.fields },
-    });
+    // Audit + notify are post-response work — the submitter doesn't need
+    // either to land before we acknowledge their submission. Deferring
+    // via ctx.waitUntil cuts ~one D1 round-trip + email API latency off
+    // every submission's perceived response time.
+    ctx.waitUntil(
+      writeAuditEntry(env, {
+        actor: 'public', action: 'create', entity: entityName, entity_id: id,
+        diff: { after: v.fields },
+      }).catch(err => console.warn('audit write failed', err?.message || err)),
+    );
 
-    await notifySubmission(env, ctx, {
+    notifySubmission(env, ctx, {
       type,
       id,
       name: v.fields.name,

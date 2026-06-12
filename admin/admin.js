@@ -353,17 +353,21 @@
 
   function link(url) {
     if (!url) return muted('—');
+    // Public submitters can land arbitrary URLs in the org website + video
+    // youtube_url fields. Render only http(s) as a real anchor — anything
+    // else (javascript:, data:, vbscript:, file:, etc.) becomes plain text
+    // so a click can't execute code in the admin origin.
+    let u;
+    try { u = new URL(url); }
+    catch { return document.createTextNode(url); }
+    if (u.protocol !== 'http:' && u.protocol !== 'https:') {
+      return document.createTextNode(url);
+    }
     const a = document.createElement('a');
-    a.href = url;
+    a.href = u.href;
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
-    // Show a short label, not the raw URL
-    try {
-      const u = new URL(url);
-      a.textContent = u.hostname.replace(/^www\./, '') + u.pathname.replace(/\/$/, '');
-    } catch {
-      a.textContent = url;
-    }
+    a.textContent = u.hostname.replace(/^www\./, '') + u.pathname.replace(/\/$/, '');
     return a;
   }
 

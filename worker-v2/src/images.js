@@ -16,12 +16,15 @@
 import { jsonResponse } from './cors.js';
 import { bearerFromRequest, verifyToken } from './auth.js';
 
+// SVG intentionally excluded — R2 serves it with image/svg+xml so any
+// embedded <script> would execute in the media.deafhive.online origin
+// (same registrable domain as the admin UI). Raster covers every
+// legitimate logo/poster use here.
 const IMAGE_MIME_MAP = {
   'image/jpeg': 'jpg',
   'image/png':  'png',
   'image/webp': 'webp',
   'image/gif':  'gif',
-  'image/svg+xml': 'svg',
 };
 
 const VIDEO_MIME_MAP = {
