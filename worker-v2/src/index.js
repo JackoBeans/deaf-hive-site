@@ -18,6 +18,10 @@
 //     POST   /admin/users          create (owner only)
 //     PATCH  /admin/users/:id      update (owner OR self)
 //     DELETE /admin/users/:id      delete (owner only, blocks self-delete)
+//     POST /admin/users/:id/create-reset-link  generate 24h reset URL (owner)
+//     POST /admin/me/change-password           {current, new} (auth)
+//     POST /admin/forgot-password              {email} (no auth, always 202)
+//     POST /admin/reset-password               {token, new_password} (no auth)
 //     GET  /admin/audit?limit=50
 //
 //   Public submissions (Turnstile + rate-limit):
@@ -44,7 +48,7 @@ import { handleRead, READ_PATHS } from './reads.js';
 import { handleAdmin } from './admin.js';
 import { handleSubmissions } from './submissions.js';
 
-const VERSION = '0.6.0-multiuser';
+const VERSION = '0.7.0-pwreset';
 
 // ── Phase 0 probes (kept for ongoing health checks) ────────────────────
 

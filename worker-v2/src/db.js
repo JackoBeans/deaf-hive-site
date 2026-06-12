@@ -630,6 +630,69 @@ export async function touchLastLogin(env, id) {
 }
 
 // ════════════════════════════════════════════════════════════════════════
+// PASSWORD RESETS
+//
+// Tokens are stored as SHA-256 hashes (token_hash UNIQUE). The raw
+// token is only ever known to the caller at issuance time.
+//
+// consumeResetToken does a SELECT then a single UPDATE — no transaction
+// because D1 serialises writes per database. At this scale, the race
+// between two concurrent reset-with-same-token requests is academic.
+// ════════════════════════════════════════════════════════════════════════
+
+export async function createPasswordReset(env, { user_id, token_hash, expires_at, source }) {
+  const now = NOW();
+  await env.DB
+    .prepare(
+      `INSERT INTO password_resets (user_id, token_hash, created_at, expires_at, source)
+       VALUES (?, ?, ?, ?, ?)`,
+    )
+    .bind(user_id, token_hash, now, expires_at, source)
+    .run();
+}
+
+// Returns { user_id } on a valid, unused, unexpired token (and marks
+// it used). Returns null otherwise. Never reveals WHY a token failed —
+// caller surfaces a single 'invalid_or_expired' to the client.
+export async function consumeResetToken(env, token_hash) {
+  if (!token_hash) return null;
+  const row = await env.DB
+    .prepare(
+      `SELECT id, user_id, expires_at, used_at
+         FROM password_resets WHERE token_hash = ?`,
+    )
+    .bind(token_hash).first();
+  if (!row)         return null;
+  if (row.used_at)  return null;
+  if (row.expires_at <= NOW()) return null;
+
+  // Mark used. If the update changes 0 rows (concurrent claim), bail.
+  const { meta } = await env.DB
+    .prepare('UPDATE password_resets SET used_at = ? WHERE id = ? AND used_at IS NULL')
+    .bind(NOW(), row.id).run();
+  if (meta.changes === 0) return null;
+
+  return { user_id: row.user_id };
+}
+
+// Optional housekeeping — drop rows that have either expired or been
+// used > 7 days ago. Sample-based, fired from inside other handlers
+// via ctx.waitUntil so it never adds latency to a request.
+export function sweepExpiredResets(env, ctx) {
+  if (Math.random() > 0.02) return;
+  const oldUsedCutoff = NOW() - 7 * 24 * 60 * 60;
+  ctx.waitUntil(
+    env.DB
+      .prepare(
+        `DELETE FROM password_resets
+           WHERE expires_at < ? OR (used_at IS NOT NULL AND used_at < ?)`,
+      )
+      .bind(NOW(), oldUsedCutoff)
+      .run().catch(() => {}),
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════
 // AUDIT LOG
 //
 // One row per mutation. Light-weight: just enough to answer "who changed

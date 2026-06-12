@@ -133,6 +133,34 @@
   const $confirmYes   = document.getElementById('confirm-yes');
   const $confirmNo    = document.getElementById('confirm-no');
 
+  // Forgot / reset / change-password views & modals
+  const $forgotView   = document.getElementById('forgot-view');
+  const $forgotForm   = document.getElementById('forgot-form');
+  const $forgotEmail  = document.getElementById('forgot-email');
+  const $forgotInfo   = document.getElementById('forgot-info');
+  const $forgotError  = document.getElementById('forgot-error');
+
+  const $resetView    = document.getElementById('reset-view');
+  const $resetForm    = document.getElementById('reset-form');
+  const $resetPw      = document.getElementById('reset-pw');
+  const $resetConfirm = document.getElementById('reset-confirm');
+  const $resetInfo    = document.getElementById('reset-info');
+  const $resetError   = document.getElementById('reset-error');
+
+  const $changePwBtn      = document.getElementById('change-pw-btn');
+  const $changePwModal    = document.getElementById('changepw-modal');
+  const $changePwForm     = document.getElementById('changepw-form');
+  const $changePwCurrent  = document.getElementById('changepw-current');
+  const $changePwNew      = document.getElementById('changepw-new');
+  const $changePwConfirm  = document.getElementById('changepw-confirm');
+  const $changePwError    = document.getElementById('changepw-error');
+  const $changePwOk       = document.getElementById('changepw-ok');
+
+  const $resetLinkModal  = document.getElementById('resetlink-modal');
+  const $resetLinkUrl    = document.getElementById('resetlink-url');
+  const $resetLinkExpiry = document.getElementById('resetlink-expiry');
+  const $resetLinkCopy   = document.getElementById('resetlink-copy');
+
   // ── State ───────────────────────────────────────────────────────────
 
   let currentTab = 'organisations';
@@ -172,8 +200,15 @@
 
   // ── View switching ──────────────────────────────────────────────────
 
+  function hideAuthViews() {
+    $loginView.hidden = true;
+    $forgotView.hidden = true;
+    $resetView.hidden = true;
+  }
+
   function showLogin(message) {
     $shellView.hidden = true;
+    hideAuthViews();
     $loginView.hidden = false;
     if (message) {
       $loginError.textContent = message;
@@ -185,8 +220,30 @@
     setTimeout(() => $loginPwd.focus(), 0);
   }
 
+  function showForgot() {
+    $shellView.hidden = true;
+    hideAuthViews();
+    $forgotView.hidden = false;
+    $forgotInfo.hidden = true;
+    $forgotError.hidden = true;
+    $forgotEmail.value = '';
+    setTimeout(() => $forgotEmail.focus(), 0);
+  }
+
+  function showReset(token) {
+    $shellView.hidden = true;
+    hideAuthViews();
+    $resetView.hidden = false;
+    $resetInfo.hidden = true;
+    $resetError.hidden = true;
+    $resetPw.value = '';
+    $resetConfirm.value = '';
+    $resetForm.dataset.token = token;
+    setTimeout(() => $resetPw.focus(), 0);
+  }
+
   function showShell() {
-    $loginView.hidden = true;
+    hideAuthViews();
     $shellView.hidden = false;
   }
 
@@ -658,6 +715,27 @@
     for (const def of schema.fields) {
       $editFields.appendChild(renderField(def, f[def.key]));
     }
+    // Owner-only "Create reset link" button — shown only when editing
+    // an existing user that's NOT the signed-in user. The signed-in
+    // user uses "Change password" in the header instead.
+    if (currentTab === 'users'
+        && editor.mode === 'edit'
+        && currentUser?.role === 'owner'
+        && currentUser.id !== editor.id) {
+      const wrap = document.createElement('div');
+      wrap.className = 'field';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn';
+      btn.textContent = 'Create reset link';
+      btn.addEventListener('click', () => generateResetLinkForUser(editor.id));
+      const hint = document.createElement('span');
+      hint.className = 'field-hint';
+      hint.textContent = '24-hour single-use link. Share out-of-band until Resend email is enabled.';
+      wrap.appendChild(btn);
+      wrap.appendChild(hint);
+      $editFields.appendChild(wrap);
+    }
   }
 
   function renderField(def, value) {
@@ -1015,9 +1093,219 @@
     $confirmModal.addEventListener('click', backdropClose);
   }
 
+  // ── Forgot password flow ────────────────────────────────────────────
+
+  document.getElementById('forgot-link').addEventListener('click', (e) => {
+    e.preventDefault();
+    showForgot();
+  });
+  document.getElementById('forgot-back').addEventListener('click', (e) => {
+    e.preventDefault();
+    showLogin();
+  });
+
+  $forgotForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = ($forgotEmail.value || '').trim();
+    if (!email) return;
+    $forgotInfo.hidden = true;
+    $forgotError.hidden = true;
+    const btn = $forgotForm.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    try {
+      await fetch(`${WORKER_URL}/admin/forgot-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      // ALWAYS the same response — don't leak whether the email exists.
+      $forgotInfo.textContent = 'If that email is registered, a reset link has been sent. Check your inbox in a minute or two.';
+      $forgotInfo.hidden = false;
+    } catch (err) {
+      $forgotError.textContent = `Network error: ${err.message || err}`;
+      $forgotError.hidden = false;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ── Reset password flow (entered via ?reset=<token> URL) ────────────
+
+  $resetForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const token = $resetForm.dataset.token || '';
+    const newPw = $resetPw.value;
+    const conf  = $resetConfirm.value;
+    $resetInfo.hidden = true;
+    $resetError.hidden = true;
+    if (newPw.length < 8) {
+      $resetError.textContent = 'Password must be at least 8 characters.';
+      $resetError.hidden = false;
+      return;
+    }
+    if (newPw !== conf) {
+      $resetError.textContent = 'Passwords do not match.';
+      $resetError.hidden = false;
+      return;
+    }
+    const btn = $resetForm.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    try {
+      const res = await fetch(`${WORKER_URL}/admin/reset-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, new_password: newPw }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        $resetError.textContent = data.error === 'invalid_or_expired'
+          ? 'This reset link is invalid, already used, or has expired. Request a new one from the sign-in page.'
+          : `Reset failed: ${data.error || res.status}`;
+        $resetError.hidden = false;
+        return;
+      }
+      // Strip ?reset=… from the URL so the user can't accidentally re-use it.
+      history.replaceState({}, '', window.location.pathname);
+      $resetInfo.textContent = 'Password updated. You can now sign in with your new password.';
+      $resetInfo.hidden = false;
+      setTimeout(() => showLogin(), 1500);
+    } catch (err) {
+      $resetError.textContent = `Network error: ${err.message || err}`;
+      $resetError.hidden = false;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ── Change password (header link → modal) ───────────────────────────
+
+  function openChangePw() {
+    $changePwError.hidden = true;
+    $changePwOk.hidden    = true;
+    $changePwCurrent.value = '';
+    $changePwNew.value     = '';
+    $changePwConfirm.value = '';
+    $changePwModal.hidden  = false;
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => $changePwCurrent.focus(), 0);
+  }
+  function closeChangePw() {
+    $changePwModal.hidden = true;
+    document.body.style.overflow = '';
+  }
+  $changePwBtn.addEventListener('click', openChangePw);
+  $changePwModal.addEventListener('click', (e) => {
+    if (e.target.dataset && 'changepwClose' in e.target.dataset) closeChangePw();
+  });
+
+  $changePwForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const current = $changePwCurrent.value;
+    const next    = $changePwNew.value;
+    const conf    = $changePwConfirm.value;
+    $changePwError.hidden = true;
+    $changePwOk.hidden    = true;
+    if (next.length < 8) {
+      $changePwError.textContent = 'New password must be at least 8 characters.';
+      $changePwError.hidden = false;
+      return;
+    }
+    if (next !== conf) {
+      $changePwError.textContent = 'New passwords do not match.';
+      $changePwError.hidden = false;
+      return;
+    }
+    const btn = $changePwForm.querySelector('button[type="submit"]');
+    btn.disabled = true;
+    try {
+      const res = await apiCall('/admin/me/change-password', {
+        method: 'POST',
+        body: JSON.stringify({ current_password: current, new_password: next }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.status === 401 && data.error === 'wrong_current_password') {
+        $changePwError.textContent = 'Current password is wrong.';
+        $changePwError.hidden = false;
+        return;
+      }
+      if (!res.ok) {
+        $changePwError.textContent = `Update failed: ${data.error || res.status}`;
+        $changePwError.hidden = false;
+        return;
+      }
+      $changePwOk.textContent = 'Password updated.';
+      $changePwOk.hidden = false;
+      setTimeout(closeChangePw, 1200);
+    } catch (err) {
+      if (err.message !== 'unauthorised') {
+        $changePwError.textContent = `Network error: ${err.message || err}`;
+        $changePwError.hidden = false;
+      }
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // ── Reset-link modal (owner opens from user edit modal) ─────────────
+
+  function openResetLinkModal(url, expiresEpoch) {
+    $resetLinkUrl.value = url;
+    if (expiresEpoch) {
+      const d = new Date(expiresEpoch * 1000);
+      const fmt = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+      $resetLinkExpiry.textContent = `Expires ${fmt.format(d)}.`;
+    } else {
+      $resetLinkExpiry.textContent = '';
+    }
+    $resetLinkModal.hidden = false;
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => { $resetLinkUrl.select(); }, 0);
+  }
+  function closeResetLinkModal() {
+    $resetLinkModal.hidden = true;
+    // The user-edit modal may still be open underneath.
+    document.body.style.overflow = $editModal.hidden ? '' : 'hidden';
+  }
+  $resetLinkModal.addEventListener('click', (e) => {
+    if (e.target.dataset && 'resetlinkClose' in e.target.dataset) closeResetLinkModal();
+  });
+  $resetLinkCopy.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText($resetLinkUrl.value);
+      $resetLinkCopy.textContent = 'Copied!';
+      setTimeout(() => { $resetLinkCopy.textContent = 'Copy link'; }, 1500);
+    } catch {
+      $resetLinkUrl.select();
+      document.execCommand?.('copy');
+    }
+  });
+
+  async function generateResetLinkForUser(userId) {
+    try {
+      const res = await apiCall(`/admin/users/${userId}/create-reset-link`, { method: 'POST' });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        alert(`Could not create reset link: ${data.error || res.status}`);
+        return;
+      }
+      openResetLinkModal(data.reset_url, data.expires_at);
+    } catch (err) {
+      if (err.message !== 'unauthorised') alert(`Network error: ${err.message || err}`);
+    }
+  }
+
   // ── Boot ────────────────────────────────────────────────────────────
 
   (async function init() {
+    // Highest priority: a reset-token URL param takes you straight to
+    // the reset screen, regardless of whether you have a stale token.
+    const params = new URLSearchParams(window.location.search);
+    const resetToken = params.get('reset');
+    if (resetToken) {
+      showReset(resetToken);
+      return;
+    }
+
     const token = getToken();
     if (!token) { showLogin(); return; }
 

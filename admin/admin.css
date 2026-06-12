@@ -149,6 +149,27 @@ html, body {
   border-radius: 0.375rem;
 }
 
+.login-info {
+  margin-top: 1rem;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  color: var(--badge-approved-fg);
+  background: var(--badge-approved-bg);
+  border-radius: 0.375rem;
+}
+
+.login-footer {
+  margin: 1.125rem 0 0 0;
+  font-size: 0.875rem;
+  text-align: center;
+}
+
+.login-link {
+  color: var(--link);
+  text-decoration: none;
+}
+.login-link:hover { text-decoration: underline; }
+
 /* ── Shell ─────────────────────────────────────────────────────────── */
 
 .shell-view {

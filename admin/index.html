@@ -36,6 +36,47 @@
 
       <button type="submit" class="login-submit">Sign in</button>
       <p id="login-error" class="login-error" hidden></p>
+
+      <p class="login-footer">
+        <a href="#" id="forgot-link" class="login-link">Forgot password?</a>
+      </p>
+    </form>
+  </section>
+
+  <!-- ───────── Forgot-password screen (email prompt) ───────── -->
+  <section id="forgot-view" class="login-view" hidden>
+    <form id="forgot-form" class="login-card" autocomplete="off">
+      <h1 class="login-title">Reset your password</h1>
+      <p class="login-help">Enter the email you sign in with. If it's registered, we'll send you a reset link.</p>
+
+      <label class="login-label" for="forgot-email">Email</label>
+      <input type="email" id="forgot-email" name="email" autocomplete="username" required autofocus>
+
+      <button type="submit" class="login-submit">Send reset link</button>
+      <p id="forgot-info" class="login-info" hidden></p>
+      <p id="forgot-error" class="login-error" hidden></p>
+
+      <p class="login-footer">
+        <a href="#" id="forgot-back" class="login-link">← Back to sign in</a>
+      </p>
+    </form>
+  </section>
+
+  <!-- ───────── Reset-password screen (used when arriving via ?reset=…) ───────── -->
+  <section id="reset-view" class="login-view" hidden>
+    <form id="reset-form" class="login-card" autocomplete="off">
+      <h1 class="login-title">Set a new password</h1>
+      <p class="login-help">Choose a new password for your account. Min 8 characters.</p>
+
+      <label class="login-label" for="reset-pw">New password</label>
+      <input type="password" id="reset-pw" name="new_password" autocomplete="new-password" required autofocus>
+
+      <label class="login-label" for="reset-confirm" style="margin-top: 0.75rem;">Confirm new password</label>
+      <input type="password" id="reset-confirm" name="confirm" autocomplete="new-password" required>
+
+      <button type="submit" class="login-submit">Set password</button>
+      <p id="reset-info"  class="login-info" hidden></p>
+      <p id="reset-error" class="login-error" hidden></p>
     </form>
   </section>
 
@@ -45,6 +86,7 @@
       <h1 class="shell-title">DeafHive admin</h1>
       <div class="shell-meta">
         <span id="session-info" class="session-info"></span>
+        <button id="change-pw-btn" type="button" class="logout-btn">Change password</button>
         <button id="logout-btn" type="button" class="logout-btn">Sign out</button>
       </div>
     </header>
@@ -104,6 +146,64 @@
           <button type="submit" id="edit-save-btn" class="btn btn-primary">Save</button>
         </footer>
       </form>
+    </div>
+  </div>
+
+  <!-- ───────── Change password modal (header link → here) ───────── -->
+  <div id="changepw-modal" class="edit-modal" role="dialog" aria-modal="true" aria-labelledby="changepw-title" hidden>
+    <div class="edit-modal-backdrop" data-changepw-close></div>
+    <div class="edit-modal-card" style="max-width: 28rem;">
+      <header class="edit-modal-header">
+        <h2 id="changepw-title" class="edit-modal-title">Change password</h2>
+        <button type="button" class="edit-modal-close" aria-label="Close" data-changepw-close>×</button>
+      </header>
+      <form id="changepw-form" class="edit-form">
+        <div class="edit-fields">
+          <div class="field field-password">
+            <label class="field-label" for="changepw-current">Current password</label>
+            <input type="password" id="changepw-current" autocomplete="current-password" required>
+          </div>
+          <div class="field field-password">
+            <label class="field-label" for="changepw-new">New password</label>
+            <input type="password" id="changepw-new" autocomplete="new-password" required minlength="8">
+          </div>
+          <div class="field field-password">
+            <label class="field-label" for="changepw-confirm">Confirm new password</label>
+            <input type="password" id="changepw-confirm" autocomplete="new-password" required minlength="8">
+          </div>
+        </div>
+        <p id="changepw-error" class="edit-error" hidden></p>
+        <p id="changepw-ok"    class="login-info" hidden style="margin: 0 1.25rem 0.75rem 1.25rem;"></p>
+        <footer class="edit-modal-footer">
+          <span class="edit-modal-spacer"></span>
+          <button type="button" class="btn" data-changepw-close>Cancel</button>
+          <button type="submit"  class="btn btn-primary">Update password</button>
+        </footer>
+      </form>
+    </div>
+  </div>
+
+  <!-- ───────── Reset-link modal (owner → "Create reset link" → here) ───────── -->
+  <div id="resetlink-modal" class="edit-modal" role="dialog" aria-modal="true" aria-labelledby="resetlink-title" hidden>
+    <div class="edit-modal-backdrop" data-resetlink-close></div>
+    <div class="edit-modal-card" style="max-width: 30rem;">
+      <header class="edit-modal-header">
+        <h2 id="resetlink-title" class="edit-modal-title">Password reset link</h2>
+        <button type="button" class="edit-modal-close" aria-label="Close" data-resetlink-close>×</button>
+      </header>
+      <div class="edit-fields">
+        <p class="field-hint" style="margin: 0;">Share this link with the user out-of-band (Slack, SMS, in person). It can only be used once and expires in 24 hours.</p>
+        <div class="field">
+          <label class="field-label" for="resetlink-url">Reset URL</label>
+          <input type="text" id="resetlink-url" readonly>
+        </div>
+        <p id="resetlink-expiry" class="field-hint"></p>
+      </div>
+      <footer class="edit-modal-footer">
+        <span class="edit-modal-spacer"></span>
+        <button type="button" id="resetlink-copy" class="btn btn-primary">Copy link</button>
+        <button type="button" class="btn" data-resetlink-close>Close</button>
+      </footer>
     </div>
   </div>
 

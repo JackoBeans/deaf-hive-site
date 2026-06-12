@@ -28,9 +28,13 @@ import { jsonResponse } from './cors.js';
 import { cachePurge } from './cache.js';
 import {
   verifyPasswordHash,
+  hashPassword,
   issueToken,
   verifyToken,
   bearerFromRequest,
+  generateResetToken,
+  hashResetToken,
+  RESET_TTL_FORGOT_SECONDS,
 } from './auth.js';
 import {
   isValidStatusFilter,
@@ -54,7 +58,12 @@ import {
   fetchUserById,
   fetchUserByEmailWithHash,
   touchLastLogin,
+  updateUser,
+  createPasswordReset,
+  consumeResetToken,
+  sweepExpiredResets,
 } from './db.js';
+import { notifyPasswordReset } from './notify.js';
 import { handleUpload, handleUploadDelete } from './images.js';
 import { handleUsers } from './users.js';
 
@@ -387,6 +396,120 @@ function diffFields(before, after, keys) {
   return Object.keys(a).length ? { before: b, after: a } : null;
 }
 
+// ── Password change / forgot / reset ───────────────────────────────────
+
+function isValidPassword(s) {
+  return typeof s === 'string' && s.length >= 8 && s.length <= 256;
+}
+
+// POST /admin/me/change-password — auth required.
+// Body: { current_password, new_password }. The bearer token alone
+// doesn't authorise a password change — a stolen token would otherwise
+// let the attacker lock the legitimate user out. Requiring the current
+// password is the minimum sane gate.
+async function handleChangePassword(request, env, origin) {
+  const auth = await requireAuth(request, env, origin);
+  if (auth.resp) return auth.resp;
+
+  let body;
+  try { body = await request.json(); }
+  catch { return jsonResponse({ error: 'invalid_json' }, 400, env, origin); }
+
+  const current = body && typeof body.current_password === 'string' ? body.current_password : '';
+  const next    = body && typeof body.new_password     === 'string' ? body.new_password     : '';
+  if (!isValidPassword(next)) {
+    return jsonResponse({ error: 'invalid_password', message: 'min 8 characters' }, 400, env, origin);
+  }
+
+  // Re-fetch with hash to verify the current password.
+  const withHash = await fetchUserByEmailWithHash(env, auth.user.fields.email);
+  if (!withHash) return jsonResponse({ error: 'user_not_found' }, 401, env, origin);
+  const ok = await verifyPasswordHash(current, withHash.password_hash);
+  if (!ok) return jsonResponse({ error: 'wrong_current_password' }, 401, env, origin);
+
+  const newHash = await hashPassword(next);
+  await updateUser(env, auth.user.id, { password_hash: newHash });
+  await writeAuditEntry(env, {
+    actor: auth.user.fields.email, action: 'update', entity: 'user',
+    entity_id: auth.user.id, diff: { password_changed: true, via: 'self_change' },
+  });
+  return jsonResponse({ ok: true }, 200, env, origin);
+}
+
+// POST /admin/forgot-password — NO auth required.
+// Body: { email }. Response is always 202 — we never reveal whether the
+// email is registered (prevents enumeration). If the user does exist,
+// we issue a 1-hour token and try to email it via Resend (silent skip
+// if Resend isn't set up yet — see notify.js).
+async function handleForgotPassword(request, env, ctx, origin) {
+  let body;
+  try { body = await request.json(); }
+  catch { return jsonResponse({ error: 'invalid_json' }, 400, env, origin); }
+
+  const email = body && typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
+  // Always return 202 — same response regardless of whether the email
+  // exists or not. The work below happens in the background.
+  ctx.waitUntil((async () => {
+    if (!email) return;
+    const user = await fetchUserByEmailWithHash(env, email);
+    if (!user) return;
+    if (user.status !== 'active') return;
+
+    const raw = generateResetToken();
+    const tokenHash = await hashResetToken(raw);
+    const expiresAt = Math.floor(Date.now() / 1000) + RESET_TTL_FORGOT_SECONDS;
+    try {
+      await createPasswordReset(env, {
+        user_id: user.id, token_hash: tokenHash, expires_at: expiresAt,
+        source: 'forgot_password',
+      });
+      const resetUrl = `${PUBLIC_ADMIN_URL}?reset=${encodeURIComponent(raw)}`;
+      notifyPasswordReset(env, ctx, { toEmail: email, resetUrl, expiresAt });
+      await writeAuditEntry(env, {
+        actor: 'public', action: 'create', entity: 'password_reset',
+        entity_id: user.id, diff: { source: 'forgot_password' },
+      });
+    } catch (err) {
+      console.warn('forgot-password background work failed', err?.message || err);
+    }
+  })());
+  sweepExpiredResets(env, ctx);
+  return jsonResponse({ ok: true }, 202, env, origin);
+}
+
+// POST /admin/reset-password — NO auth required.
+// Body: { token, new_password }. Consumes the token (one-shot) and
+// updates the linked user's password. Returns 200 on success, 400 on
+// invalid/expired/used token — same error for all three to avoid
+// confirming which case happened.
+async function handleResetPassword(request, env, origin) {
+  let body;
+  try { body = await request.json(); }
+  catch { return jsonResponse({ error: 'invalid_json' }, 400, env, origin); }
+
+  const raw  = body && typeof body.token        === 'string' ? body.token        : '';
+  const next = body && typeof body.new_password === 'string' ? body.new_password : '';
+  if (!isValidPassword(next)) {
+    return jsonResponse({ error: 'invalid_password', message: 'min 8 characters' }, 400, env, origin);
+  }
+  if (!raw) return jsonResponse({ error: 'invalid_or_expired' }, 400, env, origin);
+
+  const tokenHash = await hashResetToken(raw);
+  const claim = await consumeResetToken(env, tokenHash);
+  if (!claim) return jsonResponse({ error: 'invalid_or_expired' }, 400, env, origin);
+
+  const newHash = await hashPassword(next);
+  await updateUser(env, claim.user_id, { password_hash: newHash });
+  await writeAuditEntry(env, {
+    actor: 'public', action: 'update', entity: 'user',
+    entity_id: claim.user_id, diff: { password_changed: true, via: 'reset_link' },
+  });
+  return jsonResponse({ ok: true }, 200, env, origin);
+}
+
+// Where reset links point. The site is single-origin, so we hard-code.
+const PUBLIC_ADMIN_URL = 'https://deafhive.online/admin/';
+
 // ── Router ─────────────────────────────────────────────────────────────
 
 export async function handleAdmin(request, env, ctx, url, origin) {
@@ -394,6 +517,11 @@ export async function handleAdmin(request, env, ctx, url, origin) {
   if (request.method === 'POST' && url.pathname === '/admin/login')   return handleLogin(request, env, ctx, origin);
   if (request.method === 'GET'  && url.pathname === '/admin/whoami')  return handleWhoami(request, env, origin);
   if (request.method === 'GET'  && url.pathname === '/admin/audit')   return handleAudit(request, env, origin);
+
+  // Password change / forgot / reset
+  if (request.method === 'POST' && url.pathname === '/admin/me/change-password') return handleChangePassword(request, env, origin);
+  if (request.method === 'POST' && url.pathname === '/admin/forgot-password')    return handleForgotPassword(request, env, ctx, origin);
+  if (request.method === 'POST' && url.pathname === '/admin/reset-password')     return handleResetPassword(request, env, origin);
 
   // Upload — auth checked inside the handler.
   if (request.method === 'POST'   && url.pathname === '/admin/upload') return handleUpload(request, env, origin);

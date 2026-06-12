@@ -191,6 +191,28 @@ export async function verifyToken(env, token) {
   return { ok: true, user_id: userId, expires };
 }
 
+// ── Password-reset tokens ──────────────────────────────────────────────
+// Raw token is 32 random bytes, base64url — returned to the caller
+// ONCE (in the reset URL or via the owner-create endpoint) and never
+// stored. We store SHA-256 of the raw token; on consumption we hash
+// the URL token and look up by hash.
+
+const RESET_TOKEN_BYTES = 32;
+export const RESET_TTL_FORGOT_SECONDS  = 60 * 60;          // 1 hour
+export const RESET_TTL_OWNER_SECONDS   = 24 * 60 * 60;     // 24 hours
+
+export function generateResetToken() {
+  const bytes = crypto.getRandomValues(new Uint8Array(RESET_TOKEN_BYTES));
+  return bytesToBase64Url(bytes);
+}
+
+export async function hashResetToken(rawToken) {
+  if (typeof rawToken !== 'string' || rawToken === '') return '';
+  const bytes = new TextEncoder().encode(rawToken);
+  const hash = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 export function bearerFromRequest(request) {
   const h = request.headers.get('Authorization') || '';
   const m = /^Bearer\s+(.+)$/i.exec(h);

@@ -31,6 +31,60 @@ const TAB_FOR = {
   video:        'videos',
 };
 
+// ── Password reset email ───────────────────────────────────────────────
+// Sent when a user clicks "Forgot password?" on the login screen.
+// Fire-and-forget via waitUntil; silent skip if RESEND_API_KEY isn't
+// set yet (so the worker flow doesn't break before Resend is enabled
+// — owners can still issue reset links from the Users tab in the
+// meantime).
+
+export async function notifyPasswordReset(env, ctx, { toEmail, resetUrl, expiresAt }) {
+  if (!env.RESEND_API_KEY) {
+    console.warn('reset email skipped: RESEND_API_KEY not set');
+    return;
+  }
+  if (!toEmail || !resetUrl) {
+    console.warn('reset email skipped: missing toEmail or resetUrl');
+    return;
+  }
+
+  const expiresMins = expiresAt
+    ? Math.max(1, Math.round((expiresAt - Math.floor(Date.now() / 1000)) / 60))
+    : 60;
+
+  const subject = 'DeafHive — reset your password';
+  const text = [
+    'Someone (hopefully you) asked to reset the password for this DeafHive admin account.',
+    '',
+    `Reset link: ${resetUrl}`,
+    '',
+    `This link expires in about ${expiresMins} minute${expiresMins === 1 ? '' : 's'} and can only be used once.`,
+    '',
+    `If you didn't request this, you can safely ignore this email — your existing password is unchanged.`,
+  ].join('\n');
+
+  const send = async () => {
+    try {
+      const res = await fetch(RESEND_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+          'Content-Type':  'application/json',
+        },
+        body: JSON.stringify({ from: FROM, to: [toEmail], subject, text }),
+      });
+      if (!res.ok) {
+        const detail = await res.text().catch(() => '');
+        console.warn(`reset email: Resend ${res.status} — ${detail.slice(0, 240)}`);
+      }
+    } catch (err) {
+      console.warn('reset email: send failed', err?.message || err);
+    }
+  };
+
+  ctx.waitUntil(send());
+}
+
 // type ∈ {'organisation','event','video'}
 export async function notifySubmission(env, ctx, { type, id, name, submitterEmail }) {
   if (!env.RESEND_API_KEY) {

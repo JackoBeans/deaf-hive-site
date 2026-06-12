@@ -20,7 +20,12 @@
 // ════════════════════════════════════════════════════════════════════════
 
 import { jsonResponse } from './cors.js';
-import { hashPassword } from './auth.js';
+import {
+  hashPassword,
+  generateResetToken,
+  hashResetToken,
+  RESET_TTL_OWNER_SECONDS,
+} from './auth.js';
 import {
   fetchUserById,
   listUsers,
@@ -28,7 +33,10 @@ import {
   updateUser,
   deleteUser,
   writeAuditEntry,
+  createPasswordReset,
 } from './db.js';
+
+const PUBLIC_ADMIN_URL = 'https://deafhive.online/admin/';
 
 const ROLES    = ['owner', 'admin'];
 const STATUSES = ['active', 'disabled'];
@@ -215,6 +223,39 @@ async function handleUpdate(request, env, origin, auth, id) {
   return jsonResponse({ record: after }, 200, env, origin);
 }
 
+// POST /admin/users/:id/create-reset-link — owner only.
+// Generates a 24-hour reset token for the target user, returns the
+// resulting URL ONCE. Owner shares it out-of-band (Slack/SMS/etc.)
+// until Resend is enabled and the self-service email path works.
+
+async function handleCreateResetLink(env, origin, auth, id) {
+  if (auth.user.fields.role !== 'owner') {
+    return jsonResponse({ error: 'forbidden_owner_only' }, 403, env, origin);
+  }
+  const target = await fetchUserById(env, id);
+  if (!target) return jsonResponse({ error: 'not_found' }, 404, env, origin);
+  if (target.fields.status !== 'active') {
+    return jsonResponse({ error: 'user_disabled' }, 400, env, origin);
+  }
+
+  const raw = generateResetToken();
+  const tokenHash = await hashResetToken(raw);
+  const expiresAt = Math.floor(Date.now() / 1000) + RESET_TTL_OWNER_SECONDS;
+  await createPasswordReset(env, {
+    user_id: id, token_hash: tokenHash, expires_at: expiresAt,
+    source: 'owner_created',
+  });
+  await writeAuditEntry(env, {
+    actor: auth.user.fields.email, action: 'create', entity: 'password_reset',
+    entity_id: id, diff: { source: 'owner_created' },
+  });
+
+  return jsonResponse({
+    reset_url:  `${PUBLIC_ADMIN_URL}?reset=${encodeURIComponent(raw)}`,
+    expires_at: expiresAt,
+  }, 200, env, origin);
+}
+
 async function handleDelete(env, origin, auth, id) {
   if (auth.user.id === id) {
     return jsonResponse({ error: 'cannot_delete_self' }, 400, env, origin);
@@ -253,6 +294,12 @@ export async function handleUsers(request, env, url, origin, auth) {
     const blocked = ownerOnly(env, origin, auth);
     if (blocked) return blocked;
     return handleCreate(request, env, origin, auth);
+  }
+
+  // POST /admin/users/:id/create-reset-link — owner only (gate inside handler)
+  if (request.method === 'POST') {
+    const m = /^\/admin\/users\/(\d+)\/create-reset-link$/.exec(url.pathname);
+    if (m) return handleCreateResetLink(env, origin, auth, Number(m[1]));
   }
 
   // PATCH /admin/users/:id — owner OR self (gate enforced in handleUpdate)
