@@ -836,7 +836,9 @@ footer {
 .airtable-search {
   width: 100%;
   padding: 12px 18px;
-  border: 1.5px solid rgba(28, 45, 96, 0.18);
+  /* 0.55 alpha ≈ 3.35:1 on white — an empty input's only visible
+     boundary is its border (WCAG 1.4.11). */
+  border: 1.5px solid rgba(28, 45, 96, 0.55);
   border-radius: 999px;
   background: var(--white);
   color: var(--text);
@@ -882,7 +884,8 @@ footer {
   display: inline-flex;
   align-items: center;
   padding: 6px 14px;
-  border: 1.5px solid rgba(28, 45, 96, 0.28);
+  /* 0.55 alpha ≈ 3.35:1 on white (WCAG 1.4.11 component boundary). */
+  border: 1.5px solid rgba(28, 45, 96, 0.55);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.78);
   color: var(--text);
@@ -892,7 +895,7 @@ footer {
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.airtable-chip:hover { border-color: rgba(28, 45, 96, 0.48); }
+.airtable-chip:hover { border-color: rgba(28, 45, 96, 0.78); }
 .airtable-chip:focus-visible {
   outline: 2px solid var(--yellow);
   outline-offset: 2px;

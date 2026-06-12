@@ -58,14 +58,14 @@
       <div class="upload-widget">
         <img id="upload-preview" class="upload-preview" alt="">
         <input id="upload-file" type="file" accept="image/*">
-        <span id="upload-status" class="upload-status">(no file)</span>
+        <span id="upload-status" class="upload-status" role="status" aria-live="polite">(no file)</span>
       </div>
       <span class="field-hint">PNG or JPG, ≤ 5 MB. You'll need to complete the CAPTCHA below before uploading.</span>
     </div>
 
     <div class="field">
       <label class="field-label" for="f-submitter">Your contact email (private)</label>
-      <input id="f-submitter" name="submitter_email" type="email">
+      <input id="f-submitter" name="submitter_email" type="email" autocomplete="email">
       <span class="field-hint">Only used if we need to ask you a question. Not published.</span>
     </div>
 

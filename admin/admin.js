@@ -404,14 +404,24 @@
     ],
   };
 
-  function actionsCell() {
+  function actionsCell(_, rec) {
     const wrap = document.createElement('div');
     wrap.className = 'row-actions';
+    // Explicit Edit button — the row-click shortcut stays for mouse
+    // users, but a <tr> click handler is unreachable by keyboard, so
+    // this is the keyboard path into the edit modal (WCAG 2.1.1).
+    const edit = document.createElement('button');
+    edit.type = 'button';
+    edit.className = 'icon-btn js-row-edit';
+    edit.title = 'Edit';
+    edit.setAttribute('aria-label', `Edit ${rowName(rec)}`);
+    edit.textContent = '✏️';
+    wrap.appendChild(edit);
     const del = document.createElement('button');
     del.type = 'button';
     del.className = 'icon-btn js-row-delete';
     del.title = 'Delete';
-    del.setAttribute('aria-label', 'Delete row');
+    del.setAttribute('aria-label', `Delete ${rowName(rec)}`);
     del.textContent = '🗑';
     wrap.appendChild(del);
     return wrap;
@@ -424,7 +434,7 @@
     if (currentUser && rec && currentUser.id === rec.id) {
       return muted('(you)');
     }
-    return actionsCell();
+    return actionsCell(_, rec);
   }
 
   function rolePill(role) {
@@ -449,12 +459,23 @@
     return span;
   }
 
-  function badge(status) {
+  // Real <button> so the status-cycle action is keyboard-operable —
+  // a span with a click handler is mouse-only (WCAG 2.1.1).
+  function badge(status, rec) {
     if (!status) return muted('—');
-    const span = document.createElement('span');
-    span.className = `badge is-${status}`;
-    span.textContent = status;
-    return span;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = `badge is-${status}`;
+    btn.textContent = status;
+    btn.setAttribute('aria-label', `Status: ${status} — ${rowName(rec)}. Click to change.`);
+    return btn;
+  }
+
+  // Human identifier for a row, used in action-button labels so screen
+  // readers hear "Delete Bristol Deaf Club", not "Delete row".
+  function rowName(rec) {
+    const f = (rec && rec.fields) || {};
+    return f.name || f.email || (rec ? `#${rec.id}` : 'row');
   }
 
   function thumb(url) {
@@ -616,6 +637,12 @@
     if (e.target.closest('.js-row-delete')) {
       e.stopPropagation();
       return confirmDelete(id);
+    }
+
+    // Edit button click (keyboard path — row click is mouse-only)
+    if (e.target.closest('.js-row-edit')) {
+      e.stopPropagation();
+      return openEditModalFor(id);
     }
 
     // Status badge click → cycle to next status
@@ -950,6 +977,10 @@
 
     const status = document.createElement('div');
     status.className = 'upload-status';
+    // Live region — upload progress/errors are announced as the text
+    // changes (the element exists before any update, so this works).
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
     status.textContent = currentKey ? `Current: ${currentKey}` : '(no file)';
     right.appendChild(status);
 

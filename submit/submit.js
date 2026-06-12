@@ -107,17 +107,35 @@
   }
 
   /** Flag a required field as invalid: red border (via aria-invalid),
-   *  banner error, and focus the field so the user lands on it.
-   *  The aria-invalid clears on the next input/change so the styling
-   *  doesn't linger once the user starts typing a correction. */
+   *  a per-field error message tied to the input via aria-describedby
+   *  (so screen readers hear WHICH field failed and why, not just the
+   *  global banner), banner error, and focus the field. Everything
+   *  clears on the next input/change so the styling doesn't linger
+   *  once the user starts typing a correction. */
   function failField(inputName, message) {
     showErr(message);
     const el = $form.elements.namedItem(inputName);
     if (!el || !('focus' in el)) return;
+
+    // Per-field message — created on first use, sits right under the input.
+    const errId = `err-${inputName}`;
+    let errEl = document.getElementById(errId);
+    if (!errEl) {
+      errEl = document.createElement('span');
+      errEl.id = errId;
+      errEl.className = 'field-error';
+      el.insertAdjacentElement('afterend', errEl);
+    }
+    errEl.textContent = message;
+    errEl.hidden = false;
+
     el.setAttribute('aria-invalid', 'true');
+    el.setAttribute('aria-describedby', errId);
     el.focus();
     const clear = () => {
       el.removeAttribute('aria-invalid');
+      el.removeAttribute('aria-describedby');
+      errEl.hidden = true;
       el.removeEventListener('input',  clear);
       el.removeEventListener('change', clear);
     };

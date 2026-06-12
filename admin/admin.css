@@ -10,7 +10,8 @@
   --text:        #1c1f23;
   --text-muted:  #5a6470;
   --border:      #e4e7eb;
-  --border-strong: #c9ced6;
+  /* 3.1:1 on white — input boundaries must meet WCAG 1.4.11. */
+  --border-strong: #8a93a2;
   --link:        #0b5cab;
   --link-hover:  #0a4d8c;
   --accent:      #0b5cab;
@@ -35,7 +36,8 @@
     --text:        #e6e8eb;
     --text-muted:  #969ba3;
     --border:      #2c3038;
-    --border-strong: #3a3f48;
+    /* 3.8:1 on the dark background (WCAG 1.4.11). */
+    --border-strong: #6b7480;
     --link:        #6db4ff;
     --link-hover:  #94c9ff;
     /* Without this override the focus ring stays #0b5cab — near-invisible
@@ -356,6 +358,10 @@ html, body {
   text-transform: capitalize;
   border-radius: 999px;
   white-space: nowrap;
+  /* Badges in the data table are <button>s (keyboard-operable status
+     cycle) — strip the UA button chrome so they stay pill-shaped. */
+  border: 0;
+  font-family: inherit;
 }
 
 .badge.is-pending  { color: var(--badge-pending-fg);  background: var(--badge-pending-bg); }

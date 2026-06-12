@@ -674,6 +674,9 @@ function setStatus(listEl, message, isError) {
   listEl.replaceChildren();
   const p = document.createElement('p');
   p.className = 'airtable-status' + (isError ? ' airtable-status--error' : '');
+  // role=alert announces on DOM insertion — without it a screen-reader
+  // user gets no signal that loading failed and the page is empty.
+  if (isError) p.setAttribute('role', 'alert');
   p.textContent = message;
   listEl.appendChild(p);
 }
