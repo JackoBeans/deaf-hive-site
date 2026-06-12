@@ -6,6 +6,7 @@
 //     GET  /organisations          approved orgs from D1, edge-cached
 //     GET  /events                 approved events + joined org name
 //     GET  /videos                 approved videos + joined org name
+//     GET/HEAD /media/<key>        R2 object pass-through (immutable cache)
 //
 //   Admin (HMAC bearer token, multi-user — see users table):
 //     POST /admin/login            {email, password} → token + user
@@ -47,8 +48,9 @@ import { cachePurge } from './cache.js';
 import { handleRead, READ_PATHS } from './reads.js';
 import { handleAdmin } from './admin.js';
 import { handleSubmissions } from './submissions.js';
+import { handleMedia } from './media.js';
 
-const VERSION = '0.7.1-consolidated';
+const VERSION = '0.8.0-media-route';
 
 // ── Phase 0 probes (kept for ongoing health checks) ────────────────────
 
@@ -133,6 +135,12 @@ export default {
 
     if (request.method === 'GET' && READ_PATHS.includes(url.pathname)) {
       return handleRead(request, env, ctx, url, origin);
+    }
+
+    // Public media (R2 pass-through) — stands in for the media.deafhive
+    // .online custom domain; see src/media.js header for why.
+    if (url.pathname.startsWith('/media/')) {
+      return handleMedia(request, env, ctx, url);
     }
 
     if (url.pathname.startsWith('/admin/')) {

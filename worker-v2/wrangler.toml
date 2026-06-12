@@ -40,5 +40,10 @@ CACHE_TTL_SECONDS = "3600"
 # add http://localhost:<port> back here and `wrangler deploy`. Bearer
 # auth still gates admin endpoints either way.
 ALLOWED_ORIGINS = "https://deafhive.online"
-# Public-facing base URL for R2-hosted assets
-MEDIA_BASE_URL = "https://media.deafhive.online"
+# Public-facing base URL for R2-hosted assets.
+# Served by this worker's own GET /media/<key> route (src/media.js) —
+# the media.deafhive.online R2 custom domain is blocked because the
+# deafhive.online zone lives in a third-party Cloudflare account. If the
+# zone ever moves into this account, attach the custom domain to the
+# bucket and switch this back to "https://media.deafhive.online".
+MEDIA_BASE_URL = "https://directory-proxy-v2.silent-term-d0e4.workers.dev/media"

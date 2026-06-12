@@ -8,7 +8,14 @@ from the Airtable-backed Worker (`worker/`) to the D1/R2-backed Worker
 
 - [x] D1 + R2 hold the migrated data (35 orgs, 138 events, 6 videos)
 - [x] Fixture rows wiped from D1 (`worker-v2/fixture-wipe.sql` applied)
-- [x] `media.deafhive.online` resolves over HTTPS and serves R2 objects
+- [x] Media served via the worker's own `GET /media/<key>` route
+      (`src/media.js`). The `media.deafhive.online` R2 custom domain is
+      blocked — the deafhive.online DNS zone lives in a third-party
+      Cloudflare account, and R2 custom domains require zone + bucket in
+      the same account. `MEDIA_BASE_URL` points at
+      `https://directory-proxy-v2.silent-term-d0e4.workers.dev/media`.
+      If the zone ever moves into this account, attach the custom domain
+      to the bucket and flip `MEDIA_BASE_URL` back.
 - [x] worker-v2 CORS allowlist is production-only (no localhost)
 - [x] Admin UI shows real data correctly
 
@@ -166,7 +173,8 @@ GitHub Pages will rebuild in ~30–60 s.
 5. Filter by category / age — should narrow the count
 6. Network tab: confirm requests go to `directory-proxy-v2.*` (not
    `directory-proxy.*`)
-7. Confirm images load from `media.deafhive.online/...`
+7. Confirm images load from
+   `directory-proxy-v2.silent-term-d0e4.workers.dev/media/...`
 
 If anything is broken — see Rollback below.
 

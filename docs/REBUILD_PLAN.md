@@ -114,7 +114,18 @@ wrangler r2 bucket create deafhive-images
 
 ### 0.2 Add R2 custom domain (one-time)
 
-In the Cloudflare dashboard → R2 → `deafhive-images` → Settings → Custom Domains → add `media.deafhive.online`. Set up a DNS CNAME record at your DNS provider pointing `media` → `<bucket>.r2.cloudflarestorage.com` (Cloudflare provides the exact value). Once propagated, media URLs are `https://media.deafhive.online/<key>` — permanent, CDN-cached, zero egress fees. The bucket is named `deafhive-images` for historical reasons but serves both images (`orgs/`, `events/`) and videos (`videos/`).
+> **Superseded (2026-06-12).** The custom domain could not be attached:
+> R2 custom domains require the DNS zone and the bucket in the *same*
+> Cloudflare account, and the `deafhive.online` zone is managed in a
+> third party's account. Media is instead served by the worker's own
+> `GET /media/<key>` route (`worker-v2/src/media.js`), with
+> `MEDIA_BASE_URL = https://directory-proxy-v2.silent-term-d0e4.workers.dev/media`.
+> Same zero-egress economics (R2 binding access is free; Workers free
+> tier covers the requests; immutable edge caching keeps repeat loads
+> off the Worker). If the zone ever moves into this account, the
+> original plan below applies and `MEDIA_BASE_URL` flips back.
+
+Original plan: Cloudflare dashboard → R2 → `deafhive-images` → Settings → Custom Domains → add `media.deafhive.online`. Once propagated, media URLs are `https://media.deafhive.online/<key>` — permanent, CDN-cached, zero egress fees. The bucket is named `deafhive-images` for historical reasons but serves both images (`orgs/`, `events/`) and videos (`videos/`).
 
 ### 0.3 Set Worker secrets
 
