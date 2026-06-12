@@ -31,21 +31,15 @@
 // CONFIGURATION
 // ════════════════════════════════════════════════════════════════════════
 
-// The deployed Cloudflare Worker that proxies Airtable. No trailing slash.
-const WORKER_URL = 'https://directory-proxy.silent-term-d0e4.workers.dev';
-
-// "Organisation / Service - Description" — the manually-written multi-line
-// text field on the Organisation table in the DeafHive base. (There's also
-// a separate AI-generated `Description` field; we use the manual one as the
-// public-facing About.)
-const ABOUT_FIELD_ID = 'fldFXsrljrnYXfM8N';
+// The deployed Cloudflare Worker backed by D1 + R2. No trailing slash.
+const WORKER_URL = 'https://directory-proxy-v2.silent-term-d0e4.workers.dev';
 
 /**
  * Per-section configuration.
  *
- * Field IDs (not names) are used so renaming a field in Airtable cannot
- * break the site. They match the IDs the Worker returns, because it sets
- * `returnFieldsByFieldId=true` when calling Airtable.
+ * Field keys are the stable snake_case column names the D1-backed Worker
+ * returns (e.g. `name`, `logo_url`, `category_types`) — see
+ * worker-v2/src/db.js for the canonical list.
  *
  * `fields` is a NAMED map (title, logo, about, website, email, categories).
  * Each name has one job; if a field is null/missing the relevant UI bit
@@ -62,19 +56,19 @@ const SECTIONS = {
     nounSingular: 'organisation',
     nounPlural: 'organisations',
     fields: {
-      title:      'fld4bfPSAbKzFECtJ',  // Name
-      logo:       'fldttGzEhgV9NUCBs',  // Image(s) — attachment
-      about:      ABOUT_FIELD_ID,       // Organisation / Service - Description
-      website:    'fld4mNGInMTVA1jag',  // Website
-      email:      'fldYmHVYnc6wnIZjj',  // Contact (public)
-      categories: 'fldes1yumsDCD1rtB',  // Category Type (multi-select) — same field powers the filter
+      title:      'name',
+      logo:       'logo_url',        // plain URL string (R2-hosted)
+      about:      'about',
+      website:    'website',
+      email:      'email_public',
+      categories: 'category_types',  // string array — same field powers the filter
     },
     // Case-insensitive substring search over this field. null = no search input.
-    searchField: 'fld4bfPSAbKzFECtJ',
+    searchField: 'name',
     // Chip-pill filter rows, in display order.
     filterFields: [
-      { id: 'fldes1yumsDCD1rtB', label: 'Category Type' },
-      { id: 'fldOHinxLA1zPEobA', label: 'Age Category' },
+      { id: 'category_types', label: 'Category Type' },
+      { id: 'age_categories', label: 'Age Category' },
     ],
   },
 };
@@ -84,14 +78,12 @@ const SECTIONS = {
 const EVENTS_CONFIG = {
   endpoint: '/events',
   fields: {
-    eventName:    'fldoBpajSR36bVUvO',  // Event Name (text)
-    date:         'fldhcuE2MS7apCNat',  // Date (dateTime — includes time)
-    // The "Name (from Organisation)" Lookup field, which returns the linked
-    // organisation's name as text (not the raw linked-record ID).
-    organisation: 'fldS9rjbFoHAJ4M1I',
-    details:      'fldt13ci6IUl7KpvC',  // Event Details (multilineText)
-    address:      'fldVa5avzI8lFE1NL',  // Event Address (multilineText)
-    poster:       'fldwC5PJAa0KUpUgv',  // Event Poster/Picture (attachment)
+    eventName:    'name',
+    date:         'event_date',         // ISO 8601 string
+    organisation: 'organisation_name',  // joined org name, plain string
+    details:      'details',
+    address:      'address',
+    poster:       'poster_url',         // plain URL string (R2-hosted)
   },
 };
 
@@ -701,14 +693,17 @@ function uniqueValues(records, fieldId) {
 }
 
 /**
- * Pull a usable URL out of an Airtable attachment field value.
- * `prefer` is 'thumbnail' (small grid card) or 'full' (modal); we fall back
- * cleanly when a thumbnail isn't available.
+ * Pull a usable image URL out of a field value.
  *
- * NOTE: Airtable attachment URLs expire 2 hours after the API call that
- * returned them. The Worker's 1h cache keeps us safely under that window.
+ * The D1-backed Worker returns plain URL strings (`logo_url`,
+ * `poster_url`) — permanent R2-hosted links, no expiry. The old
+ * Airtable attachment-array shape (`[{url, thumbnails…}]`) is still
+ * accepted as a fallback so a rollback to the old Worker doesn't break
+ * rendering. `prefer` ('thumbnail' | 'full') only matters for the
+ * legacy shape; R2 URLs serve one size.
  */
 function getAttachmentUrl(value, prefer) {
+  if (typeof value === 'string') return value.trim() || null;
   if (!Array.isArray(value) || value.length === 0) return null;
   const att = value[0];
   if (!att) return null;
