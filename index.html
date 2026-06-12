@@ -250,7 +250,10 @@
          Worker, builds the search + chip filters, renders the card grid,
          and opens a detail modal on card click. -->
     <div class="card" id="directory-embed">
-      <h2 class="sec-title mb-24">DeafHive Community Directory</h2>
+      <div class="sec-title-row mb-24">
+        <h2 class="sec-title">DeafHive Community Directory</h2>
+        <a class="sec-submit-btn" href="submit/organisation.html">+ Submit organisation</a>
+      </div>
       <section class="airtable-section" data-source="organisations" aria-busy="true">
         <input
           type="search"
@@ -276,7 +279,10 @@
        modals. JS in app.js drives everything — this is the static shell. -->
   <div class="archive-section">
     <div class="card events-card" id="events">
-      <h2 class="sec-title mb-24">BSL Events &amp; Community Video Archive</h2>
+      <div class="sec-title-row mb-24">
+        <h2 class="sec-title">BSL Events &amp; Community Video Archive</h2>
+        <a class="sec-submit-btn" href="submit/event.html">+ Submit event</a>
+      </div>
 
       <!-- Status placeholder shown until JS replaces it (loading / not-configured / error). -->
       <p class="airtable-status" id="events-status">Loading events…</p>

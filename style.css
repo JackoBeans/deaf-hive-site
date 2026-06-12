@@ -534,6 +534,41 @@ h2.sec-title {
   margin-bottom: 8px;
 }
 
+/* Heading row — h2 + Submit CTA on one baseline. Wraps to two lines on
+   narrow viewports so the heading never gets squashed. */
+.sec-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.sec-title-row > .sec-title { margin-bottom: 0; }
+
+/* Inline section CTA — small yellow pill (same palette as .btn-yellow).
+   Used to send the visitor to /submit/* without leaving the directory or
+   events card. Anchor element, so right-click/middle-click open in new tab. */
+.sec-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: var(--yellow);
+  color: var(--text);
+  font-weight: 700;
+  font-size: var(--text-md);
+  border-radius: 999px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s, transform 0.05s;
+}
+.sec-submit-btn:hover { background: var(--yellow-dk); }
+.sec-submit-btn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+.sec-submit-btn:active { transform: translateY(1px); }
+
 h2.sec-title-center {
   font-size: var(--text-2xl);
   font-weight: 800;
@@ -1209,7 +1244,7 @@ footer {
 /* The Events card gets no internal padding; children pad themselves so the
    navy filter bar can stretch edge-to-edge inside the rounded white card. */
 .events-card { padding: 0; overflow: hidden; }
-.events-card > .sec-title { padding: 36px 36px 0; }
+.events-card > .sec-title-row { padding: 36px 36px 0; }
 .events-card > #events-status { padding: 0 36px 32px; text-align: center; }
 
 /* Reusable icon size for the Lucide symbols */
@@ -1921,6 +1956,6 @@ footer {
 @media (max-width: 480px) {
   .event-filter-bar { padding: 14px 16px; }
   .event-body { padding: 18px 16px 22px; }
-  .events-card > .sec-title { padding: 28px 20px 0; }
+  .events-card > .sec-title-row { padding: 28px 20px 0; }
   .events-card > #events-status { padding: 0 20px 22px; }
 }
