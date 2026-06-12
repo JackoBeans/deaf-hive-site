@@ -20,7 +20,7 @@
     <nav class="page-nav">
       <a href="organisation.html">Organisation</a>
       <a href="event.html">Event</a>
-      <a href="video.html" class="is-active">Video</a>
+      <a href="video.html" class="is-active" aria-current="page">Video</a>
     </nav>
   </header>
 
@@ -28,19 +28,20 @@
   <div id="banner-err" class="banner banner-err" hidden role="alert"  aria-live="assertive"></div>
 
   <form id="submit-form" class="form-card" autocomplete="off" novalidate>
+    <p class="required-key">Fields marked <span class="field-required" aria-hidden="true">*</span> are required.</p>
     <div class="honeypot" aria-hidden="true">
       <label>Email (do not fill) <input type="text" name="hp_email" tabindex="-1" autocomplete="off"></label>
     </div>
 
     <div class="field">
-      <label class="field-label" for="f-name">Video title <span class="field-required">*</span></label>
+      <label class="field-label" for="f-name">Video title <span class="field-required" aria-hidden="true">*</span></label>
       <input id="f-name" name="name" type="text" required>
     </div>
 
     <div class="field">
-      <label class="field-label" for="f-youtube">YouTube URL <span class="field-required">*</span></label>
-      <input id="f-youtube" name="youtube_url" type="url" required placeholder="https://www.youtube.com/watch?v=…">
-      <span class="field-hint">Public submissions are YouTube-link only. Direct video uploads can be requested via the DeafHive team.</span>
+      <label class="field-label" for="f-youtube">YouTube URL <span class="field-required" aria-hidden="true">*</span></label>
+      <input id="f-youtube" name="youtube_url" type="url" required placeholder="https://www.youtube.com/watch?v=…" aria-describedby="hint-youtube">
+      <span class="field-hint" id="hint-youtube">Public submissions are YouTube-link only. Direct video uploads can be requested via the DeafHive team.</span>
     </div>
 
     <div class="field">
@@ -50,8 +51,8 @@
 
     <div class="field">
       <label class="field-label" for="f-submitter">Your contact email (private)</label>
-      <input id="f-submitter" name="submitter_email" type="email" autocomplete="email">
-      <span class="field-hint">Only used if we need to ask you a question. Not published.</span>
+      <input id="f-submitter" name="submitter_email" type="email" autocomplete="email" aria-describedby="hint-submitter">
+      <span class="field-hint" id="hint-submitter">Only used if we need to ask you a question. Not published.</span>
     </div>
 
     <div class="turnstile-wrap">

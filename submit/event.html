@@ -19,7 +19,7 @@
     <p class="page-lede">Got a BSL event coming up? Submit it for review and we'll add it to the DeafHive calendar.</p>
     <nav class="page-nav">
       <a href="organisation.html">Organisation</a>
-      <a href="event.html" class="is-active">Event</a>
+      <a href="event.html" class="is-active" aria-current="page">Event</a>
       <a href="video.html">Video</a>
     </nav>
   </header>
@@ -28,19 +28,20 @@
   <div id="banner-err" class="banner banner-err" hidden role="alert"  aria-live="assertive"></div>
 
   <form id="submit-form" class="form-card" autocomplete="off" novalidate>
+    <p class="required-key">Fields marked <span class="field-required" aria-hidden="true">*</span> are required.</p>
     <div class="honeypot" aria-hidden="true">
       <label>Email (do not fill) <input type="text" name="hp_email" tabindex="-1" autocomplete="off"></label>
     </div>
 
     <div class="field">
-      <label class="field-label" for="f-name">Event name <span class="field-required">*</span></label>
+      <label class="field-label" for="f-name">Event name <span class="field-required" aria-hidden="true">*</span></label>
       <input id="f-name" name="name" type="text" required>
     </div>
 
     <div class="field">
-      <label class="field-label" for="f-date">Date and time <span class="field-required">*</span></label>
-      <input id="f-date" name="event_date" type="datetime-local" required>
-      <span class="field-hint">Pick the start time. We'll display it in UK time.</span>
+      <label class="field-label" for="f-date">Date and time <span class="field-required" aria-hidden="true">*</span></label>
+      <input id="f-date" name="event_date" type="datetime-local" required aria-describedby="hint-date">
+      <span class="field-hint" id="hint-date">Pick the start time. We'll display it in UK time.</span>
     </div>
 
     <div class="field">
@@ -57,16 +58,16 @@
       <label class="field-label" for="upload-file">Poster (optional)</label>
       <div class="upload-widget">
         <img id="upload-preview" class="upload-preview" alt="">
-        <input id="upload-file" type="file" accept="image/*">
+        <input id="upload-file" type="file" accept="image/*" aria-describedby="hint-upload">
         <span id="upload-status" class="upload-status" role="status" aria-live="polite">(no file)</span>
       </div>
-      <span class="field-hint">PNG or JPG, ≤ 5 MB. You'll need to complete the CAPTCHA below before uploading.</span>
+      <span class="field-hint" id="hint-upload">PNG or JPG, ≤ 5 MB. You'll need to complete the CAPTCHA below before uploading.</span>
     </div>
 
     <div class="field">
       <label class="field-label" for="f-submitter">Your contact email (private)</label>
-      <input id="f-submitter" name="submitter_email" type="email" autocomplete="email">
-      <span class="field-hint">Only used if we need to ask you a question. Not published.</span>
+      <input id="f-submitter" name="submitter_email" type="email" autocomplete="email" aria-describedby="hint-submitter">
+      <span class="field-hint" id="hint-submitter">Only used if we need to ask you a question. Not published.</span>
     </div>
 
     <div class="turnstile-wrap">

@@ -210,6 +210,7 @@
     $shellView.hidden = true;
     hideAuthViews();
     $loginView.hidden = false;
+    document.title = 'DeafHive — Admin sign in';
     if (message) {
       $loginError.textContent = message;
       $loginError.hidden = false;
@@ -224,6 +225,7 @@
     $shellView.hidden = true;
     hideAuthViews();
     $forgotView.hidden = false;
+    document.title = 'DeafHive — Admin password help';
     $forgotInfo.hidden = true;
     $forgotError.hidden = true;
     $forgotEmail.value = '';
@@ -234,6 +236,7 @@
     $shellView.hidden = true;
     hideAuthViews();
     $resetView.hidden = false;
+    document.title = 'DeafHive — Set a new admin password';
     $resetInfo.hidden = true;
     $resetError.hidden = true;
     $resetPw.value = '';
@@ -245,6 +248,7 @@
   function showShell() {
     hideAuthViews();
     $shellView.hidden = false;
+    document.title = 'DeafHive — Admin';
   }
 
   // ── Login flow ──────────────────────────────────────────────────────
@@ -351,6 +355,11 @@
       b.setAttribute('aria-selected', String(isActive));
     }
     currentTab = tab;
+    // Keep the tabpanel's accessible name + the window title in sync
+    // with the active tab (multiple admin tabs are distinguishable).
+    const tabLabel = btn.textContent.trim();
+    document.getElementById('table-wrap').setAttribute('aria-label', tabLabel);
+    document.title = `DeafHive — Admin — ${tabLabel}`;
     loadTable();
   });
 
@@ -1356,6 +1365,13 @@
     try {
       await navigator.clipboard.writeText($resetLinkUrl.value);
       $resetLinkCopy.textContent = 'Copied!';
+      // Announce via the live region — the button-text swap alone is
+      // not reported as a status change by screen readers.
+      const copied = document.getElementById('resetlink-copied');
+      if (copied) {
+        copied.textContent = 'Link copied to clipboard.';
+        setTimeout(() => { copied.textContent = ''; }, 2500);
+      }
       setTimeout(() => { $resetLinkCopy.textContent = 'Copy link'; }, 1500);
     } catch {
       $resetLinkUrl.select();

@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="admin.css">
 </head>
 <body>
+  <a class="skip-link" href="#table-wrap">Skip to table</a>
 
   <!-- ───────── Login screen ───────── -->
   <section id="login-view" class="login-view" hidden>
@@ -69,10 +70,10 @@
       <p class="login-help">Choose a new password for your account. Min 8 characters.</p>
 
       <label class="login-label" for="reset-pw">New password</label>
-      <input type="password" id="reset-pw" name="new_password" autocomplete="new-password" required autofocus>
+      <input type="password" id="reset-pw" name="new_password" autocomplete="new-password" required autofocus minlength="8">
 
       <label class="login-label" for="reset-confirm" style="margin-top: 0.75rem;">Confirm new password</label>
-      <input type="password" id="reset-confirm" name="confirm" autocomplete="new-password" required>
+      <input type="password" id="reset-confirm" name="confirm" autocomplete="new-password" required minlength="8">
 
       <button type="submit" class="login-submit">Set password</button>
       <p id="reset-info"  class="login-info" hidden></p>
@@ -114,7 +115,10 @@
       <button id="refresh-btn" type="button" class="refresh-btn" title="Refresh">↻ Refresh</button>
     </div>
 
-    <div id="table-wrap" class="table-wrap">
+    <!-- tabpanel: content region for the tab strip above. aria-label is
+         kept in sync with the active tab by admin.js. tabindex=-1 lets
+         the skip link land real focus here. -->
+    <div id="table-wrap" class="table-wrap" role="tabpanel" aria-label="Organisations" tabindex="-1">
       <div id="table-empty" class="table-empty" hidden>No rows.</div>
       <div id="table-error" class="table-error" hidden></div>
       <div id="table-loading" class="table-loading" role="status" aria-live="polite" hidden>Loading…</div>
@@ -198,6 +202,7 @@
           <input type="text" id="resetlink-url" readonly>
         </div>
         <p id="resetlink-expiry" class="field-hint"></p>
+        <p id="resetlink-copied" class="field-hint" role="status" aria-live="polite"></p>
       </div>
       <footer class="edit-modal-footer">
         <span class="edit-modal-spacer"></span>

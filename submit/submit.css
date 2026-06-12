@@ -177,6 +177,16 @@ fieldset.field > legend {
   margin-left: 0.125rem;
 }
 
+/* One-line key at the top of each form explaining the * symbol (WCAG
+   3.3.2 — a bare symbol is otherwise unexplained). The asterisks in
+   labels are aria-hidden; the `required` attribute carries the
+   programmatic state. */
+.required-key {
+  margin: 0 0 1.125rem;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
 .field-hint {
   font-size: var(--text-xs);
   color: var(--text-muted);

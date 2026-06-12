@@ -129,12 +129,18 @@
     errEl.textContent = message;
     errEl.hidden = false;
 
+    // Compose with any existing hint association rather than replacing
+    // it — fields like the YouTube URL carry a permanent
+    // aria-describedby pointing at their .field-hint.
+    const baseDescribedBy = (el.getAttribute('aria-describedby') || '')
+      .split(/\s+/).filter(t => t && t !== errId).join(' ');
     el.setAttribute('aria-invalid', 'true');
-    el.setAttribute('aria-describedby', errId);
+    el.setAttribute('aria-describedby', baseDescribedBy ? `${errId} ${baseDescribedBy}` : errId);
     el.focus();
     const clear = () => {
       el.removeAttribute('aria-invalid');
-      el.removeAttribute('aria-describedby');
+      if (baseDescribedBy) el.setAttribute('aria-describedby', baseDescribedBy);
+      else el.removeAttribute('aria-describedby');
       errEl.hidden = true;
       el.removeEventListener('input',  clear);
       el.removeEventListener('change', clear);
@@ -314,6 +320,11 @@
     }
 
     $submit.disabled = true;
+    // Announce the in-flight state — disabled alone changes nothing a
+    // screen reader reports, and sighted users only see lower opacity.
+    const submitLabel = $submit.textContent;
+    $submit.textContent = 'Submitting…';
+    $submit.setAttribute('aria-busy', 'true');
     try {
       const res = await fetch(`${WORKER_URL}${ENDPOINTS[kind]}`, {
         method: 'POST',
@@ -338,6 +349,8 @@
       showErr(`Network error: ${err.message || err}`);
     } finally {
       $submit.disabled = false;
+      $submit.textContent = submitLabel;
+      $submit.removeAttribute('aria-busy');
     }
   });
 
