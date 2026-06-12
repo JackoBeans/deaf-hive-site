@@ -19,12 +19,14 @@
 //   They are hashed here via auth.hashPassword before reaching db.js.
 // ════════════════════════════════════════════════════════════════════════
 
-import { jsonResponse } from './cors.js';
+import { jsonResponse, readJsonBody } from './cors.js';
 import {
   hashPassword,
   generateResetToken,
   hashResetToken,
   RESET_TTL_OWNER_SECONDS,
+  resetUrlFor,
+  isValidPassword,
 } from './auth.js';
 import {
   fetchUserById,
@@ -35,8 +37,6 @@ import {
   writeAuditEntry,
   createPasswordReset,
 } from './db.js';
-
-const PUBLIC_ADMIN_URL = 'https://deafhive.online/admin/';
 
 const ROLES    = ['owner', 'admin'];
 const STATUSES = ['active', 'disabled'];
@@ -49,12 +49,6 @@ const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 function isValidEmail(s)    { return typeof s === 'string' && EMAIL_RE.test(s); }
 function isValidRole(s)     { return ROLES.includes(s); }
 function isValidStatusU(s)  { return STATUSES.includes(s); }
-function isValidPassword(s) {
-  // The bar is intentionally lenient — admins are trusted to use
-  // password managers — but we reject anything too short / non-string
-  // / clearly empty.
-  return typeof s === 'string' && s.length >= 8 && s.length <= 256;
-}
 
 // ── Handlers (all gated by the calling router; we receive {auth}) ──────
 
@@ -70,9 +64,8 @@ async function handleDetail(env, origin, auth, id) {
 }
 
 async function handleCreate(request, env, origin, auth) {
-  let body;
-  try { body = await request.json(); }
-  catch { return jsonResponse({ error: 'invalid_json' }, 400, env, origin); }
+  const { body, resp: bodyResp } = await readJsonBody(request, env, origin);
+  if (bodyResp) return bodyResp;
 
   const fields = body && body.fields ? body.fields : body;
   if (!fields || typeof fields !== 'object') {
@@ -128,9 +121,8 @@ async function handleCreate(request, env, origin, auth) {
 }
 
 async function handleUpdate(request, env, origin, auth, id) {
-  let body;
-  try { body = await request.json(); }
-  catch { return jsonResponse({ error: 'invalid_json' }, 400, env, origin); }
+  const { body, resp: bodyResp } = await readJsonBody(request, env, origin);
+  if (bodyResp) return bodyResp;
 
   const fields = body && body.fields ? body.fields : body;
   if (!fields || typeof fields !== 'object') {
@@ -251,7 +243,7 @@ async function handleCreateResetLink(env, origin, auth, id) {
   });
 
   return jsonResponse({
-    reset_url:  `${PUBLIC_ADMIN_URL}?reset=${encodeURIComponent(raw)}`,
+    reset_url:  resetUrlFor(raw),
     expires_at: expiresAt,
   }, 200, env, origin);
 }

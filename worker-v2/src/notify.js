@@ -1,28 +1,18 @@
 // ════════════════════════════════════════════════════════════════════════
-// Resend — "you have a new submission" email.
+// Resend — outbound email (submission notifications + password resets).
 //
-// Reads two env vars:
+// Reads:
 //   RESEND_API_KEY      — starts with "re_..."
-//   NOTIFY_RECIPIENTS   — comma-separated list, e.g. "mail@signingworks.co.uk"
+//   NOTIFY_RECIPIENTS   — comma-separated list, used by notifySubmission
 //
 // From address is `onboarding@resend.dev` (Resend's free-tier sender,
-// no DNS verification needed). The body is plain text with a deep link
-// straight to the admin tab + row so triage is one click.
-//
-// Failure is non-fatal: an email-send error must not break the public
-// submission — the row is already in D1. We log + swallow.
+// no DNS verification needed). All sends are fire-and-forget via
+// ctx.waitUntil. Send failures log + swallow — the calling flow (a
+// submission or a reset) must not break because email is slow/down.
 // ════════════════════════════════════════════════════════════════════════
 
 const RESEND_URL = 'https://api.resend.com/emails';
 const FROM = 'DeafHive Submissions <onboarding@resend.dev>';
-
-function recipients(env) {
-  return (env.NOTIFY_RECIPIENTS || '')
-    .split(',')
-    .map(s => s.trim())
-    .filter(Boolean);
-}
-
 const PUBLIC_SITE = 'https://deafhive.online';
 
 const TAB_FOR = {
@@ -31,84 +21,24 @@ const TAB_FOR = {
   video:        'videos',
 };
 
-// ── Password reset email ───────────────────────────────────────────────
-// Sent when a user clicks "Forgot password?" on the login screen.
-// Fire-and-forget via waitUntil; silent skip if RESEND_API_KEY isn't
-// set yet (so the worker flow doesn't break before Resend is enabled
-// — owners can still issue reset links from the Users tab in the
-// meantime).
-
-export async function notifyPasswordReset(env, ctx, { toEmail, resetUrl, expiresAt }) {
-  if (!env.RESEND_API_KEY) {
-    console.warn('reset email skipped: RESEND_API_KEY not set');
-    return;
-  }
-  if (!toEmail || !resetUrl) {
-    console.warn('reset email skipped: missing toEmail or resetUrl');
-    return;
-  }
-
-  const expiresMins = expiresAt
-    ? Math.max(1, Math.round((expiresAt - Math.floor(Date.now() / 1000)) / 60))
-    : 60;
-
-  const subject = 'DeafHive — reset your password';
-  const text = [
-    'Someone (hopefully you) asked to reset the password for this DeafHive admin account.',
-    '',
-    `Reset link: ${resetUrl}`,
-    '',
-    `This link expires in about ${expiresMins} minute${expiresMins === 1 ? '' : 's'} and can only be used once.`,
-    '',
-    `If you didn't request this, you can safely ignore this email — your existing password is unchanged.`,
-  ].join('\n');
-
-  const send = async () => {
-    try {
-      const res = await fetch(RESEND_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${env.RESEND_API_KEY}`,
-          'Content-Type':  'application/json',
-        },
-        body: JSON.stringify({ from: FROM, to: [toEmail], subject, text }),
-      });
-      if (!res.ok) {
-        const detail = await res.text().catch(() => '');
-        console.warn(`reset email: Resend ${res.status} — ${detail.slice(0, 240)}`);
-      }
-    } catch (err) {
-      console.warn('reset email: send failed', err?.message || err);
-    }
-  };
-
-  ctx.waitUntil(send());
+function recipients(env) {
+  return (env.NOTIFY_RECIPIENTS || '')
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
 }
 
-// type ∈ {'organisation','event','video'}
-export async function notifySubmission(env, ctx, { type, id, name, submitterEmail }) {
+// Shared fire-and-forget sender. Logs failures with a caller-chosen
+// tag so notify-vs-reset errors stay distinguishable in Worker logs.
+function sendEmail(env, ctx, { to, subject, text, logTag }) {
   if (!env.RESEND_API_KEY) {
-    console.warn('notify skipped: RESEND_API_KEY not set');
+    console.warn(`${logTag}: skipped — RESEND_API_KEY not set`);
     return;
   }
-  const to = recipients(env);
-  if (to.length === 0) {
-    console.warn('notify skipped: NOTIFY_RECIPIENTS empty');
+  if (!Array.isArray(to) || to.length === 0) {
+    console.warn(`${logTag}: skipped — no recipients`);
     return;
   }
-
-  const tab = TAB_FOR[type] || 'organisations';
-  const link = `${PUBLIC_SITE}/admin/?tab=${tab}&focus=${id}`;
-
-  const subject = `DeafHive — new ${type} submission awaiting review`;
-  const text = [
-    `A new ${type} ("${name || '(untitled)'}") has been submitted via deafhive.online/submit.`,
-    '',
-    submitterEmail ? `Submitter email: ${submitterEmail}` : '(no submitter email provided)',
-    '',
-    `Review: ${link}`,
-  ].join('\n');
-
   const send = async () => {
     try {
       const res = await fetch(RESEND_URL, {
@@ -121,14 +51,51 @@ export async function notifySubmission(env, ctx, { type, id, name, submitterEmai
       });
       if (!res.ok) {
         const detail = await res.text().catch(() => '');
-        console.warn(`notify: Resend ${res.status} — ${detail.slice(0, 240)}`);
+        console.warn(`${logTag}: Resend ${res.status} — ${detail.slice(0, 240)}`);
       }
     } catch (err) {
-      console.warn('notify: send failed', err?.message || err);
+      console.warn(`${logTag}: send failed`, err?.message || err);
     }
   };
-
-  // Fire-and-forget so the user gets a quick success response even if
-  // Resend is slow.
   ctx.waitUntil(send());
+}
+
+// ── Password reset email ───────────────────────────────────────────────
+
+export function notifyPasswordReset(env, ctx, { toEmail, resetUrl, expiresAt }) {
+  if (!toEmail || !resetUrl) {
+    console.warn('reset email: skipped — missing toEmail or resetUrl');
+    return;
+  }
+  const expiresMins = expiresAt
+    ? Math.max(1, Math.round((expiresAt - Math.floor(Date.now() / 1000)) / 60))
+    : 60;
+  const subject = 'DeafHive — reset your password';
+  const text = [
+    'Someone (hopefully you) asked to reset the password for this DeafHive admin account.',
+    '',
+    `Reset link: ${resetUrl}`,
+    '',
+    `This link expires in about ${expiresMins} minute${expiresMins === 1 ? '' : 's'} and can only be used once.`,
+    '',
+    `If you didn't request this, you can safely ignore this email — your existing password is unchanged.`,
+  ].join('\n');
+  sendEmail(env, ctx, { to: [toEmail], subject, text, logTag: 'reset email' });
+}
+
+// ── Submission notification email ──────────────────────────────────────
+// type ∈ {'organisation','event','video'}
+
+export function notifySubmission(env, ctx, { type, id, name, submitterEmail }) {
+  const tab = TAB_FOR[type] || 'organisations';
+  const link = `${PUBLIC_SITE}/admin/?tab=${tab}&focus=${id}`;
+  const subject = `DeafHive — new ${type} submission awaiting review`;
+  const text = [
+    `A new ${type} ("${name || '(untitled)'}") has been submitted via deafhive.online/submit.`,
+    '',
+    submitterEmail ? `Submitter email: ${submitterEmail}` : '(no submitter email provided)',
+    '',
+    `Review: ${link}`,
+  ].join('\n');
+  sendEmail(env, ctx, { to: recipients(env), subject, text, logTag: 'notify' });
 }

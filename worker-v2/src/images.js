@@ -15,12 +15,13 @@
 
 import { jsonResponse } from './cors.js';
 import { bearerFromRequest, verifyToken } from './auth.js';
+import { mediaUrl } from './db.js';
 
 // SVG intentionally excluded — R2 serves it with image/svg+xml so any
 // embedded <script> would execute in the media.deafhive.online origin
 // (same registrable domain as the admin UI). Raster covers every
 // legitimate logo/poster use here.
-const IMAGE_MIME_MAP = {
+export const IMAGE_MIME_MAP = {
   'image/jpeg': 'jpg',
   'image/png':  'png',
   'image/webp': 'webp',
@@ -33,7 +34,7 @@ const VIDEO_MIME_MAP = {
   'video/quicktime': 'mov',
 };
 
-const MAX_IMAGE_BYTES = 5  * 1024 * 1024;
+export const MAX_IMAGE_BYTES = 5  * 1024 * 1024;
 const MAX_VIDEO_BYTES = 100 * 1024 * 1024;
 
 // ── Auth gate (same as admin.js but local — keeps admin.js skinny) ──
@@ -49,7 +50,7 @@ async function requireAdmin(request, env, origin) {
 // ── Key generation ────────────────────────────────────────────────────
 
 // Date.now() in Workers — fine here (this is not a sandboxed workflow).
-function ymPrefix() {
+export function ymPrefix() {
   const d = new Date();
   const y = d.getUTCFullYear();
   const m = String(d.getUTCMonth() + 1).padStart(2, '0');
@@ -62,11 +63,6 @@ function uuid() {
 
 function r2KeyFor(folder, ext) {
   return `${folder}/${ymPrefix()}/${uuid()}.${ext}`;
-}
-
-function urlFor(env, key) {
-  const base = (env.MEDIA_BASE_URL || '').replace(/\/+$/, '');
-  return `${base}/${key}`;
 }
 
 // ── POST /admin/upload ────────────────────────────────────────────────
@@ -128,7 +124,7 @@ export async function handleUpload(request, env, origin) {
   }
 
   return jsonResponse(
-    { ok: true, key, url: urlFor(env, key), content_type: mime },
+    { ok: true, key, url: mediaUrl(env, key), content_type: mime },
     200, env, origin,
   );
 }

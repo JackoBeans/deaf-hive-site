@@ -191,6 +191,17 @@ export async function verifyToken(env, token) {
   return { ok: true, user_id: userId, expires };
 }
 
+// ── Password-reset URL helpers ─────────────────────────────────────────
+// Single source of truth for where reset links point + how they're
+// constructed, so admin.js (forgot-password) and users.js (owner-
+// created link) don't drift.
+
+export const PUBLIC_ADMIN_URL = 'https://deafhive.online/admin/';
+
+export function resetUrlFor(rawToken) {
+  return `${PUBLIC_ADMIN_URL}?reset=${encodeURIComponent(rawToken)}`;
+}
+
 // ── Password-reset tokens ──────────────────────────────────────────────
 // Raw token is 32 random bytes, base64url — returned to the caller
 // ONCE (in the reset URL or via the owner-create endpoint) and never
@@ -211,6 +222,14 @@ export async function hashResetToken(rawToken) {
   const bytes = new TextEncoder().encode(rawToken);
   const hash = await crypto.subtle.digest('SHA-256', bytes);
   return [...new Uint8Array(hash)].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// ── Password policy ────────────────────────────────────────────────────
+// Shared min/max length check used by every place that accepts a new
+// password from a caller — create-user, self-change, reset.
+
+export function isValidPassword(s) {
+  return typeof s === 'string' && s.length >= 8 && s.length <= 256;
 }
 
 export function bearerFromRequest(request) {

@@ -30,7 +30,9 @@ import {
   createEvent,
   createVideo,
   writeAuditEntry,
+  mediaUrl,
 } from './db.js';
+import { IMAGE_MIME_MAP, MAX_IMAGE_BYTES, ymPrefix } from './images.js';
 
 // ── Shared pre-flight (honeypot + Turnstile + rate-limit) ──────────────
 
@@ -220,20 +222,9 @@ const handleVideoSubmission = makeSubmissionHandler({
 // abusable for a public endpoint. Videos from public submissions can be
 // YouTube-only for now.
 
-const PUBLIC_UPLOAD_MIME = {
-  'image/jpeg': 'jpg',
-  'image/png':  'png',
-  'image/webp': 'webp',
-  'image/gif':  'gif',
-};
-const PUBLIC_UPLOAD_MAX_BYTES = 5 * 1024 * 1024;
-
-function ymPrefix() {
-  const d = new Date();
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-  return `${y}/${m}`;
-}
+// Public uploads share the same image-only allowlist + 5 MB cap as the
+// admin path (see images.js). SVG is excluded by virtue of not being
+// in IMAGE_MIME_MAP.
 
 async function handlePublicUpload(request, env, ctx, origin) {
   let form;
@@ -258,16 +249,16 @@ async function handlePublicUpload(request, env, ctx, origin) {
     return jsonResponse({ error: 'missing_file_field' }, 400, env, origin);
   }
   const mime = file.type || 'application/octet-stream';
-  const ext  = PUBLIC_UPLOAD_MIME[mime];
+  const ext  = IMAGE_MIME_MAP[mime];
   if (!ext) {
     return jsonResponse(
-      { error: 'unsupported_type', received: mime, allowed: Object.keys(PUBLIC_UPLOAD_MIME) },
+      { error: 'unsupported_type', received: mime, allowed: Object.keys(IMAGE_MIME_MAP) },
       415, env, origin,
     );
   }
-  if (typeof file.size === 'number' && file.size > PUBLIC_UPLOAD_MAX_BYTES) {
+  if (typeof file.size === 'number' && file.size > MAX_IMAGE_BYTES) {
     return jsonResponse(
-      { error: 'too_large', max_bytes: PUBLIC_UPLOAD_MAX_BYTES, received_bytes: file.size },
+      { error: 'too_large', max_bytes: MAX_IMAGE_BYTES, received_bytes: file.size },
       413, env, origin,
     );
   }
@@ -282,8 +273,7 @@ async function handlePublicUpload(request, env, ctx, origin) {
     );
   }
 
-  const base = (env.MEDIA_BASE_URL || '').replace(/\/+$/, '');
-  return jsonResponse({ ok: true, key, url: `${base}/${key}` }, 200, env, origin);
+  return jsonResponse({ ok: true, key, url: mediaUrl(env, key) }, 200, env, origin);
 }
 
 // ── Router ─────────────────────────────────────────────────────────────

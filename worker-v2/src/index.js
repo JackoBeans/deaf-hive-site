@@ -48,7 +48,7 @@ import { handleRead, READ_PATHS } from './reads.js';
 import { handleAdmin } from './admin.js';
 import { handleSubmissions } from './submissions.js';
 
-const VERSION = '0.7.0-pwreset';
+const VERSION = '0.7.1-consolidated';
 
 // ── Phase 0 probes (kept for ongoing health checks) ────────────────────
 

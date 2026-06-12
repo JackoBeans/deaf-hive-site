@@ -50,6 +50,18 @@ export function withCors(response, env, origin) {
   });
 }
 
+// Shared "parse request as JSON or return a 400" helper. Used at every
+// endpoint that accepts a JSON body. Returns either { body } on success
+// or { resp } with a pre-built 400 response on parse failure.
+export async function readJsonBody(request, env, origin) {
+  try {
+    const body = await request.json();
+    return { body };
+  } catch {
+    return { resp: jsonResponse({ error: 'invalid_json' }, 400, env, origin) };
+  }
+}
+
 export function jsonResponse(payload, status, env, origin, extraHeaders) {
   return new Response(JSON.stringify(payload), {
     status,

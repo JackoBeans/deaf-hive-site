@@ -24,7 +24,7 @@
 // /videos endpoints refresh within seconds.
 // ════════════════════════════════════════════════════════════════════════
 
-import { jsonResponse } from './cors.js';
+import { jsonResponse, readJsonBody } from './cors.js';
 import { cachePurge } from './cache.js';
 import {
   verifyPasswordHash,
@@ -35,6 +35,8 @@ import {
   generateResetToken,
   hashResetToken,
   RESET_TTL_FORGOT_SECONDS,
+  resetUrlFor,
+  isValidPassword,
 } from './auth.js';
 import {
   isValidStatusFilter,
@@ -62,14 +64,13 @@ import {
   createPasswordReset,
   consumeResetToken,
   sweepExpiredResets,
+  STATUS_VALUES,
 } from './db.js';
 import { notifyPasswordReset } from './notify.js';
 import { handleUpload, handleUploadDelete } from './images.js';
 import { handleUsers } from './users.js';
 
 import { READ_PATHS } from './reads.js';
-
-const STATUS_VALUES = ['pending', 'approved', 'rejected', 'draft'];
 
 // ── Auth gate ──────────────────────────────────────────────────────────
 // Returns { resp: null, user, expires } on success — `user` is the
@@ -140,9 +141,8 @@ async function handleLogin(request, env, ctx, origin) {
   if (!env.ADMIN_TOKEN_SECRET) {
     return jsonResponse({ error: 'auth_not_configured' }, 503, env, origin);
   }
-  let body;
-  try { body = await request.json(); }
-  catch { return jsonResponse({ error: 'invalid_json' }, 400, env, origin); }
+  const { body, resp: bodyResp } = await readJsonBody(request, env, origin);
+  if (bodyResp) return bodyResp;
 
   const email    = body && typeof body.email === 'string'    ? body.email.trim().toLowerCase() : '';
   const password = body && typeof body.password === 'string' ? body.password : '';
@@ -225,9 +225,8 @@ async function handleCreate(request, env, url, origin, table) {
   const auth = await requireAuth(request, env, origin);
   if (auth.resp) return auth.resp;
 
-  let body;
-  try { body = await request.json(); }
-  catch { return jsonResponse({ error: 'invalid_json' }, 400, env, origin); }
+  const { body, resp: bodyResp } = await readJsonBody(request, env, origin);
+  if (bodyResp) return bodyResp;
 
   const fields = body && body.fields ? body.fields : body;
   if (!fields || typeof fields !== 'object') {
@@ -262,9 +261,8 @@ async function handleUpdate(request, env, url, origin, table, id) {
   const auth = await requireAuth(request, env, origin);
   if (auth.resp) return auth.resp;
 
-  let body;
-  try { body = await request.json(); }
-  catch { return jsonResponse({ error: 'invalid_json' }, 400, env, origin); }
+  const { body, resp: bodyResp } = await readJsonBody(request, env, origin);
+  if (bodyResp) return bodyResp;
 
   const fields = body && body.fields ? body.fields : body;
   if (!fields || typeof fields !== 'object') {
@@ -326,9 +324,8 @@ async function handleStatusChange(request, env, url, origin, table, id) {
   const auth = await requireAuth(request, env, origin);
   if (auth.resp) return auth.resp;
 
-  let body;
-  try { body = await request.json(); }
-  catch { return jsonResponse({ error: 'invalid_json' }, 400, env, origin); }
+  const { body, resp: bodyResp } = await readJsonBody(request, env, origin);
+  if (bodyResp) return bodyResp;
 
   const next = body && body.status;
   if (!STATUS_VALUES.includes(next)) {
@@ -398,10 +395,6 @@ function diffFields(before, after, keys) {
 
 // ── Password change / forgot / reset ───────────────────────────────────
 
-function isValidPassword(s) {
-  return typeof s === 'string' && s.length >= 8 && s.length <= 256;
-}
-
 // POST /admin/me/change-password — auth required.
 // Body: { current_password, new_password }. The bearer token alone
 // doesn't authorise a password change — a stolen token would otherwise
@@ -411,9 +404,8 @@ async function handleChangePassword(request, env, origin) {
   const auth = await requireAuth(request, env, origin);
   if (auth.resp) return auth.resp;
 
-  let body;
-  try { body = await request.json(); }
-  catch { return jsonResponse({ error: 'invalid_json' }, 400, env, origin); }
+  const { body, resp: bodyResp } = await readJsonBody(request, env, origin);
+  if (bodyResp) return bodyResp;
 
   const current = body && typeof body.current_password === 'string' ? body.current_password : '';
   const next    = body && typeof body.new_password     === 'string' ? body.new_password     : '';
@@ -442,9 +434,8 @@ async function handleChangePassword(request, env, origin) {
 // we issue a 1-hour token and try to email it via Resend (silent skip
 // if Resend isn't set up yet — see notify.js).
 async function handleForgotPassword(request, env, ctx, origin) {
-  let body;
-  try { body = await request.json(); }
-  catch { return jsonResponse({ error: 'invalid_json' }, 400, env, origin); }
+  const { body, resp: bodyResp } = await readJsonBody(request, env, origin);
+  if (bodyResp) return bodyResp;
 
   const email = body && typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
   // Always return 202 — same response regardless of whether the email
@@ -463,7 +454,7 @@ async function handleForgotPassword(request, env, ctx, origin) {
         user_id: user.id, token_hash: tokenHash, expires_at: expiresAt,
         source: 'forgot_password',
       });
-      const resetUrl = `${PUBLIC_ADMIN_URL}?reset=${encodeURIComponent(raw)}`;
+      const resetUrl = resetUrlFor(raw);
       notifyPasswordReset(env, ctx, { toEmail: email, resetUrl, expiresAt });
       await writeAuditEntry(env, {
         actor: 'public', action: 'create', entity: 'password_reset',
@@ -483,9 +474,8 @@ async function handleForgotPassword(request, env, ctx, origin) {
 // invalid/expired/used token — same error for all three to avoid
 // confirming which case happened.
 async function handleResetPassword(request, env, origin) {
-  let body;
-  try { body = await request.json(); }
-  catch { return jsonResponse({ error: 'invalid_json' }, 400, env, origin); }
+  const { body, resp: bodyResp } = await readJsonBody(request, env, origin);
+  if (bodyResp) return bodyResp;
 
   const raw  = body && typeof body.token        === 'string' ? body.token        : '';
   const next = body && typeof body.new_password === 'string' ? body.new_password : '';
@@ -506,9 +496,6 @@ async function handleResetPassword(request, env, origin) {
   });
   return jsonResponse({ ok: true }, 200, env, origin);
 }
-
-// Where reset links point. The site is single-origin, so we hard-code.
-const PUBLIC_ADMIN_URL = 'https://deafhive.online/admin/';
 
 // ── Router ─────────────────────────────────────────────────────────────
 

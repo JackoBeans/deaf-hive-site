@@ -34,7 +34,7 @@ function buildUpdate(table, id, fields, allowedKeys) {
   };
 }
 
-function mediaUrl(env, key) {
+export function mediaUrl(env, key) {
   if (!key) return null;
   const base = (env.MEDIA_BASE_URL || '').replace(/\/+$/, '');
   return `${base}/${key}`;
@@ -120,7 +120,7 @@ export async function fetchApprovedEvents(env) {
 // 'all' (default) — anything else is rejected by validateStatusFilter()
 // in admin.js before reaching here, so we can interpolate safely.
 
-const STATUS_VALUES = ['pending', 'approved', 'rejected', 'draft'];
+export const STATUS_VALUES = ['pending', 'approved', 'rejected', 'draft'];
 
 export function isValidStatusFilter(status) {
   return status === 'all' || STATUS_VALUES.includes(status);
