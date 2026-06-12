@@ -106,6 +106,25 @@
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
+  /** Flag a required field as invalid: red border (via aria-invalid),
+   *  banner error, and focus the field so the user lands on it.
+   *  The aria-invalid clears on the next input/change so the styling
+   *  doesn't linger once the user starts typing a correction. */
+  function failField(inputName, message) {
+    showErr(message);
+    const el = $form.elements.namedItem(inputName);
+    if (!el || !('focus' in el)) return;
+    el.setAttribute('aria-invalid', 'true');
+    el.focus();
+    const clear = () => {
+      el.removeAttribute('aria-invalid');
+      el.removeEventListener('input',  clear);
+      el.removeEventListener('change', clear);
+    };
+    el.addEventListener('input',  clear);
+    el.addEventListener('change', clear);
+  }
+
   // ── Field serialisation ─────────────────────────────────────────────
 
   // Read a named input as a string-or-null.
@@ -260,17 +279,19 @@
     body.hp_email = val('hp_email') || '';
     body.turnstile_token = lastToken;
 
-    // Required-field client check (server validates again).
+    // Required-field client check (server validates again). failField()
+    // sets aria-invalid + focuses the field so screen-reader users and
+    // keyboard users land on the broken input.
     if (!body.name) {
-      showErr('Please enter a name.');
+      failField('name', 'Please enter a name.');
       return;
     }
     if (kind === 'event' && !body.event_date) {
-      showErr('Please enter the event date and time.');
+      failField('event_date', 'Please enter the event date and time.');
       return;
     }
     if (kind === 'video' && !body.youtube_url) {
-      showErr('Please enter the YouTube URL.');
+      failField('youtube_url', 'Please enter the YouTube URL.');
       return;
     }
 

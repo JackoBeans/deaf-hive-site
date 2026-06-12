@@ -11,8 +11,28 @@
   --text-muted:  #5a6470;
   --border:      #e4e7eb;
   --border-strong: #c9ced6;
-  --accent:      #0b5cab;
-  --accent-hover:#0a4d8c;
+  /* Brand tokens — kept in sync with /style.css so the submit pages share
+     the main site's navy/yellow palette and focus ring. If you change a
+     value on the main site, mirror it here. */
+  --navy:        #2852b7;
+  --navy-dk:     #1f46aa;
+  --yellow:      #f5c842;
+  --yellow-dk:   #d4a800;
+  --accent:      var(--navy);
+  --accent-hover:var(--navy-dk);
+  --focus-ring-color: var(--yellow);
+  --focus-ring-width: 3px;
+  /* Typography scale — mirrored from /style.css. Submit pages don't load
+     the main stylesheet so the tokens have to be redeclared here. Keep
+     these values in sync. */
+  --text-xs:   0.82rem;
+  --text-sm:   0.88rem;
+  --text-md:   0.95rem;
+  --text-base: 1rem;
+  --text-lg:   1.2rem;
+  --text-xl:   1.5rem;
+  --text-2xl:  1.8rem;
+  --text-3xl:  2.8rem;
   --ok-bg:       #e1f5e6;
   --ok-fg:       #1f6f37;
   --err-bg:      #fbe1e3;
@@ -41,9 +61,32 @@
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
 
+/* Skip-to-content link for keyboard users — same pattern as /style.css.
+   Hidden off-screen until it receives focus from a Tab keypress. */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 16px;
+  z-index: 300;
+  padding: 10px 18px;
+  background: var(--yellow);
+  color: var(--navy);
+  border-radius: 8px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: top 0.2s ease;
+}
+.skip-link:focus {
+  top: 16px;
+  outline: 2px solid var(--navy);
+  outline-offset: 2px;
+}
+
 html, body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  /* Match the main site (style.css). The HTML files load Raleway
+     synchronously; system fonts cover the fallback during the small swap. */
+  font-family: 'Raleway', -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   font-size: 16px;
   line-height: 1.5;
   color: var(--text);
@@ -62,19 +105,19 @@ html, body {
 
 .page-title {
   margin: 0 0 0.5rem 0;
-  font-size: 1.5rem;
+  font-size: var(--text-xl);
   font-weight: 700;
 }
 
 .page-lede {
   margin: 0;
   color: var(--text-muted);
-  font-size: 0.9375rem;
+  font-size: var(--text-md);
 }
 
 .page-nav {
   margin-top: 1rem;
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
 }
 
 .page-nav a {
@@ -102,7 +145,7 @@ html, body {
 }
 
 .field-label {
-  font-size: 0.875rem;
+  font-size: var(--text-sm);
   font-weight: 600;
 }
 
@@ -112,7 +155,7 @@ html, body {
 }
 
 .field-hint {
-  font-size: 0.8125rem;
+  font-size: var(--text-xs);
   color: var(--text-muted);
 }
 
@@ -124,7 +167,7 @@ html, body {
 .field textarea,
 .field select {
   font-family: inherit;
-  font-size: 1rem;
+  font-size: var(--text-base);
   padding: 0.625rem 0.75rem;
   color: var(--text);
   background: var(--bg);
@@ -141,9 +184,19 @@ html, body {
 .field input:focus,
 .field textarea:focus,
 .field select:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
   border-color: transparent;
+}
+
+/* Invalid field — set by submit.js when client-side validation fails on
+   a required input. Cleared on the next 'input' event so the red border
+   doesn't linger once the user starts typing a correction. */
+.field input[aria-invalid="true"],
+.field textarea[aria-invalid="true"],
+.field select[aria-invalid="true"] {
+  border-color: var(--err-fg);
+  box-shadow: 0 0 0 1px var(--err-fg);
 }
 
 /* Honeypot — visually + functionally hidden, but DOM-present so bots fill it. */
@@ -159,30 +212,43 @@ html, body {
   border: 0;
 }
 
-/* Chip multi-select */
+/* Chip multi-select.
+   Visual must match .airtable-chip on the main site (see style.css). The
+   two have intentionally different MARKUP — .airtable-chip is a <button>
+   with aria-pressed for filter toggles; .chip is a <label> wrapping a
+   checkbox for actual form submission — but they render identically so
+   the user moving from filter to form sees the same shape and colour. */
 .chip-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.375rem;
+  gap: 8px;
 }
 
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.375rem 0.75rem;
-  font-size: 0.875rem;
-  background: var(--bg);
-  border: 1px solid var(--border-strong);
+  padding: 6px 14px;
+  border: 1.5px solid rgba(28, 45, 96, 0.28);
   border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--navy);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
   cursor: pointer;
   user-select: none;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.chip:hover { border-color: rgba(28, 45, 96, 0.48); }
+.chip:focus-within {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
 }
 .chip input { position: absolute; opacity: 0; pointer-events: none; }
 .chip.is-checked {
-  background: var(--accent);
-  color: #fff;
-  border-color: var(--accent);
+  background: var(--navy);
+  color: var(--white);
+  border-color: var(--navy);
 }
 
 /* ── Buttons ───────────────────────────────────────────────────────── */
@@ -193,15 +259,22 @@ html, body {
   gap: 0.375rem;
   padding: 0.75rem 1.125rem;
   font-family: inherit;
-  font-size: 1rem;
-  font-weight: 600;
-  color: #fff;
-  background: var(--accent);
+  font-size: var(--text-base);
+  font-weight: 700;
+  /* Matches .btn-yellow on the main site: yellow background, near-black
+     text. The submit-button is the primary CTA on these pages, so it
+     gets the same treatment as “Explore DeafHive” on index.html. */
+  color: #1a1a1a;
+  background: var(--yellow);
   border: 0;
   border-radius: 0.375rem;
   cursor: pointer;
 }
-.btn:hover { background: var(--accent-hover); }
+.btn:hover { background: var(--yellow-dk); }
+.btn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
 .btn:disabled { opacity: 0.55; cursor: progress; }
 
 /* ── Status banners ────────────────────────────────────────────────── */
@@ -209,7 +282,7 @@ html, body {
 .banner {
   padding: 0.875rem 1rem;
   border-radius: 0.5rem;
-  font-size: 0.9375rem;
+  font-size: var(--text-md);
   margin-bottom: 1.25rem;
 }
 .banner-ok  { color: var(--ok-fg);  background: var(--ok-bg); }
@@ -234,4 +307,4 @@ html, body {
   background: var(--bg);
   border: 1px solid var(--border);
 }
-.upload-status { font-size: 0.8125rem; color: var(--text-muted); }
+.upload-status { font-size: var(--text-xs); color: var(--text-muted); }

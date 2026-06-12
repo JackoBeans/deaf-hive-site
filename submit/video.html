@@ -5,10 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <title>DeafHive — Submit a video</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700&amp;display=swap" crossorigin>
   <link rel="stylesheet" href="submit.css">
   <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 </head>
 <body data-kind="video">
+<a class="skip-link" href="#submit-form">Skip to form</a>
 <main class="page">
   <header class="page-header">
     <h1 class="page-title">Submit a video</h1>
@@ -20,8 +24,8 @@
     </nav>
   </header>
 
-  <div id="banner-ok"  class="banner banner-ok"  hidden></div>
-  <div id="banner-err" class="banner banner-err" hidden></div>
+  <div id="banner-ok"  class="banner banner-ok"  hidden role="status" aria-live="polite"></div>
+  <div id="banner-err" class="banner banner-err" hidden role="alert"  aria-live="assertive"></div>
 
   <form id="submit-form" class="form-card" autocomplete="off" novalidate>
     <div class="honeypot" aria-hidden="true">
