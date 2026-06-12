@@ -93,10 +93,19 @@ export async function handleMedia(request, env, ctx, url) {
   const rangeHeader = request.headers.get('Range');
 
   // Edge cache — full responses only. Keyed on bare URL (no query).
+  // Conditional requests must be honoured here too: cache.match() returns
+  // the stored 200 as-is, so without this check a revalidating client
+  // would always be sent the full body once the edge is warm.
   const cacheKey = new Request(`${url.origin}${url.pathname}`, { method: 'GET' });
+  const inm = request.headers.get('If-None-Match');
   if (!rangeHeader) {
     const hit = await caches.default.match(cacheKey);
-    if (hit) return hit;
+    if (hit) {
+      if (inm && inm === hit.headers.get('ETag')) {
+        return new Response(null, { status: 304, headers: hit.headers });
+      }
+      return hit;
+    }
   }
 
   let obj;
@@ -113,7 +122,6 @@ export async function handleMedia(request, env, ctx, url) {
   const headers = baseHeaders(obj);
 
   // Conditional GET — immutable keys mean a matching ETag is always current.
-  const inm = request.headers.get('If-None-Match');
   if (inm && inm === obj.httpEtag) {
     return new Response(null, { status: 304, headers });
   }
