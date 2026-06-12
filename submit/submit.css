@@ -22,6 +22,10 @@
   --accent-hover:var(--navy-dk);
   --focus-ring-color: var(--yellow);
   --focus-ring-width: 3px;
+  /* Navy halo fills the outline-offset gap — yellow alone is 1.59:1 on
+     white (fails WCAG 1.4.11); the two-layer ring passes everywhere.
+     Mirrored from /style.css. */
+  --focus-ring-halo:  0 0 0 2px var(--navy);
   /* Typography scale — mirrored from /style.css. Submit pages don't load
      the main stylesheet so the tokens have to be redeclared here. Keep
      these values in sync. */
@@ -144,6 +148,22 @@ html, body {
   margin-bottom: 1.125rem;
 }
 
+/* Chip groups are <fieldset class="field"> with a <legend class="field-label">
+   (programmatic grouping for screen readers). Strip the browser's default
+   fieldset chrome so they render identically to the div-based fields.
+   `display: grid` doesn't apply to fieldsets in all browsers, so the
+   margin-bottom rhythm comes from .field; the legend needs its own gap. */
+fieldset.field {
+  border: 0;
+  padding: 0;
+  margin: 0 0 1.125rem;
+  min-width: 0;
+}
+fieldset.field > legend {
+  padding: 0;
+  margin-bottom: 0.375rem;
+}
+
 .field-label {
   font-size: var(--text-sm);
   font-weight: 600;
@@ -186,6 +206,7 @@ html, body {
 .field select:focus {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: 2px;
+  box-shadow: var(--focus-ring-halo);
   border-color: transparent;
 }
 
@@ -243,6 +264,7 @@ html, body {
 .chip:focus-within {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: 2px;
+  box-shadow: var(--focus-ring-halo);
 }
 .chip input { position: absolute; opacity: 0; pointer-events: none; }
 .chip.is-checked {
@@ -274,6 +296,7 @@ html, body {
 .btn:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: 2px;
+  box-shadow: var(--focus-ring-halo);
 }
 .btn:disabled { opacity: 0.55; cursor: progress; }
 

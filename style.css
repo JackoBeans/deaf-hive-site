@@ -35,6 +35,15 @@
   --text-xl:   1.5rem;
   --text-2xl:  1.8rem;
   --text-3xl:  2.8rem;
+
+  /* Focus ring. Yellow alone fails WCAG 1.4.11 on white (1.59:1), so on
+     light surfaces the ring is two-layer: a navy halo fills the offset
+     gap, giving ≥3:1 against any background the yellow fails on.
+     (Yellow alone is fine on navy surfaces — 4.4:1.) Mirrored in
+     /submit/submit.css. */
+  --focus-ring-width: 3px;
+  --focus-ring-color: var(--yellow);
+  --focus-ring-halo:  0 0 0 2px var(--navy);
 }
 
 body {
@@ -1958,4 +1967,26 @@ footer {
   .event-body { padding: 18px 16px 22px; }
   .events-card > .sec-title-row { padding: 28px 20px 0; }
   .events-card > #events-status { padding: 0 20px 22px; }
+}
+
+/* ── ACCESSIBLE FOCUS RING (WCAG 1.4.11 non-text contrast) ──────────────
+   Two-layer ring for interactive elements that sit on WHITE surfaces,
+   where the yellow outline alone is near-invisible (1.59:1). The navy
+   box-shadow fills the outline-offset gap, so the indicator reads
+   navy-then-yellow and passes 3:1 against any background.
+   Elements on navy surfaces (.event-chip, .event-dropdown-btn, modal
+   close buttons over the dark backdrop) keep their plain yellow ring —
+   it passes there (4.4:1). Declared last so it wins the cascade over
+   the earlier per-component focus rules. */
+.video-facade:focus-visible,
+.sec-submit-btn:focus-visible,
+.airtable-chip:focus-visible,
+.airtable-card:focus-visible,
+.event-agenda-card:focus-visible,
+.event-pill:focus-visible,
+.event-view-btn:focus-visible,
+.event-nav-btn:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+  box-shadow: var(--focus-ring-halo);
 }

@@ -652,6 +652,39 @@
     }
   }
 
+  // ── Modal focus management ──────────────────────────────────────────
+  // Every modal: save the element that had focus at open, make everything
+  // except the topmost modal inert (keyboard + screen-reader users can't
+  // wander into the background), restore focus on close. Stack-based so
+  // the confirm and reset-link modals can sit on top of the edit modal.
+  // Same pattern as createModalAPI in the public site's app.js.
+
+  const modalStack = [];
+
+  function recomputeInert() {
+    const top = modalStack.length ? modalStack[modalStack.length - 1].modal : null;
+    for (const el of document.body.children) {
+      if (el.tagName === 'SCRIPT') continue;
+      if (top && el !== top) el.setAttribute('inert', '');
+      else el.removeAttribute('inert');
+    }
+  }
+
+  function modalOpened(modal) {
+    modalStack.push({ modal, prev: document.activeElement });
+    recomputeInert();
+  }
+
+  function modalClosed(modal) {
+    for (let i = modalStack.length - 1; i >= 0; i--) {
+      if (modalStack[i].modal !== modal) continue;
+      const { prev } = modalStack.splice(i, 1)[0];
+      recomputeInert();
+      if (prev && typeof prev.focus === 'function') prev.focus();
+      return;
+    }
+  }
+
   // ── Edit modal — open / close ───────────────────────────────────────
 
   function openEditModalNew() {
@@ -686,6 +719,7 @@
   function showEditModal() {
     $editModal.hidden = false;
     document.body.style.overflow = 'hidden';
+    modalOpened($editModal);
     setTimeout(() => {
       const first = $editFields.querySelector('input,textarea,select');
       if (first && typeof first.focus === 'function') first.focus();
@@ -696,14 +730,23 @@
     $editModal.hidden = true;
     document.body.style.overflow = '';
     editor = null;
+    modalClosed($editModal);
   }
 
   $editModal.addEventListener('click', (e) => {
     if (e.target.dataset && 'close' in e.target.dataset) closeEditModal();
   });
   $editCancel.addEventListener('click', closeEditModal);
+  // One Escape handler for all four modals, topmost first — confirm and
+  // reset-link can stack on top of the edit modal. The confirm modal's
+  // close logic lives in listeners scoped inside confirmDelete(), so
+  // Escape routes through a click on its Cancel button.
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !$editModal.hidden) closeEditModal();
+    if (e.key !== 'Escape') return;
+    if (!$resetLinkModal.hidden) { closeResetLinkModal(); return; }
+    if (!$confirmModal.hidden)   { $confirmNo.click(); return; }
+    if (!$changePwModal.hidden)  { closeChangePw(); return; }
+    if (!$editModal.hidden)      { closeEditModal(); }
   });
 
   // ── Edit form renderer ─────────────────────────────────────────────
@@ -1061,6 +1104,9 @@
     $confirmYes.textContent = 'Delete';
     $confirmModal.hidden = false;
     document.body.style.overflow = 'hidden';
+    modalOpened($confirmModal);
+    // Land on the safe default — Delete is one deliberate Tab away.
+    setTimeout(() => $confirmNo.focus(), 0);
 
     const onYes = async () => {
       cleanup();
@@ -1081,6 +1127,7 @@
     function cleanup() {
       $confirmModal.hidden = true;
       document.body.style.overflow = $editModal.hidden ? '' : 'hidden';
+      modalClosed($confirmModal);
       $confirmYes.removeEventListener('click', onYes);
       $confirmNo.removeEventListener('click', onNo);
       $confirmModal.removeEventListener('click', backdropClose);
@@ -1187,11 +1234,14 @@
     $changePwConfirm.value = '';
     $changePwModal.hidden  = false;
     document.body.style.overflow = 'hidden';
+    modalOpened($changePwModal);
     setTimeout(() => $changePwCurrent.focus(), 0);
   }
   function closeChangePw() {
+    if ($changePwModal.hidden) return;
     $changePwModal.hidden = true;
     document.body.style.overflow = '';
+    modalClosed($changePwModal);
   }
   $changePwBtn.addEventListener('click', openChangePw);
   $changePwModal.addEventListener('click', (e) => {
@@ -1259,12 +1309,14 @@
     }
     $resetLinkModal.hidden = false;
     document.body.style.overflow = 'hidden';
+    modalOpened($resetLinkModal);
     setTimeout(() => { $resetLinkUrl.select(); }, 0);
   }
   function closeResetLinkModal() {
     $resetLinkModal.hidden = true;
     // The user-edit modal may still be open underneath.
     document.body.style.overflow = $editModal.hidden ? '' : 'hidden';
+    modalClosed($resetLinkModal);
   }
   $resetLinkModal.addEventListener('click', (e) => {
     if (e.target.dataset && 'resetlinkClose' in e.target.dataset) closeResetLinkModal();

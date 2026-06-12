@@ -60,8 +60,11 @@
       <input id="f-address" name="address" type="text" placeholder="Street, town, postcode">
     </div>
 
-    <div class="field">
-      <label class="field-label">Category Type</label>
+    <!-- fieldset/legend so screen readers announce the group name with
+         each checkbox ("Category Type, Community, checkbox"). A bare
+         label above the group has no programmatic link to the inputs. -->
+    <fieldset class="field">
+      <legend class="field-label">Category Type</legend>
       <div class="chip-row">
         <label class="chip"><input type="checkbox" name="category_types" value="Community">Community</label>
         <label class="chip"><input type="checkbox" name="category_types" value="Education">Education</label>
@@ -71,10 +74,10 @@
         <label class="chip"><input type="checkbox" name="category_types" value="Health">Health</label>
         <label class="chip"><input type="checkbox" name="category_types" value="Support">Support</label>
       </div>
-    </div>
+    </fieldset>
 
-    <div class="field">
-      <label class="field-label">Age Category</label>
+    <fieldset class="field">
+      <legend class="field-label">Age Category</legend>
       <div class="chip-row">
         <label class="chip"><input type="checkbox" name="age_categories" value="Children (0-12)">Children (0-12)</label>
         <label class="chip"><input type="checkbox" name="age_categories" value="Young people (13-24)">Young people (13-24)</label>
@@ -82,7 +85,7 @@
         <label class="chip"><input type="checkbox" name="age_categories" value="Seniors (60+)">Seniors (60+)</label>
         <label class="chip"><input type="checkbox" name="age_categories" value="All ages">All ages</label>
       </div>
-    </div>
+    </fieldset>
 
     <div class="field">
       <label class="field-label" for="upload-file">Logo (optional)</label>
