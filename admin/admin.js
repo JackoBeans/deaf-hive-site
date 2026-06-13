@@ -34,6 +34,15 @@
   const ROLE_OPTIONS   = ['owner', 'admin'];
   const STATUS_USERS   = ['active', 'disabled'];
 
+  // Protected superadmin — mirrors PROTECTED_OWNER_EMAILS in the worker
+  // (worker-v2/src/users.js), which is the ACTUAL enforcement. This copy
+  // only drives the UI: it hides the delete control and disables the
+  // role/status fields for the locked account so the owner isn't offered
+  // an action the server will reject. Keep the two lists in sync.
+  const PROTECTED_OWNER_EMAILS = ['mail@markschofield.org'];
+  const isProtectedEmail = (e) =>
+    typeof e === 'string' && PROTECTED_OWNER_EMAILS.includes(e.trim().toLowerCase());
+
   const SCHEMA = {
     users: {
       label: 'User',
@@ -413,7 +422,7 @@
     ],
   };
 
-  function actionsCell(_, rec) {
+  function actionsCell(_, rec, opts = {}) {
     const wrap = document.createElement('div');
     wrap.className = 'row-actions';
     // Explicit Edit button — the row-click shortcut stays for mouse
@@ -426,6 +435,16 @@
     edit.setAttribute('aria-label', `Edit ${rowName(rec)}`);
     edit.textContent = '✏️';
     wrap.appendChild(edit);
+    if (opts.omitDelete) {
+      // Locked account — show a non-interactive lock where delete would be.
+      const lock = document.createElement('span');
+      lock.className = 'row-lock';
+      lock.title = 'Locked owner — cannot be deleted';
+      lock.setAttribute('aria-label', 'Locked owner account');
+      lock.textContent = '🔒';
+      wrap.appendChild(lock);
+      return wrap;
+    }
     const del = document.createElement('button');
     del.type = 'button';
     del.className = 'icon-btn js-row-delete';
@@ -438,10 +457,14 @@
 
   // User-specific actions cell: same delete affordance, but skip on the
   // current user's own row (server also blocks self-delete; the UI
-  // mirrors so it's not even surfaced).
+  // mirrors so it's not even surfaced). The protected superadmin gets a
+  // lock instead of a delete button (enforced server-side regardless).
   function userActionsCell(_, rec) {
     if (currentUser && rec && currentUser.id === rec.id) {
       return muted('(you)');
+    }
+    if (rec && isProtectedEmail(rec.fields?.email)) {
+      return actionsCell(_, rec, { omitDelete: true });
     }
     return actionsCell(_, rec);
   }
@@ -949,9 +972,18 @@
         if (editor.mode === 'create' && shown != null) {
           editor.pendingFields[def.key] = shown;
         }
-        input.addEventListener('change', () => {
-          editor.pendingFields[def.key] = input.value;
-        });
+        // Lock role + status on the protected superadmin's row — the
+        // worker rejects these changes regardless, this just stops them
+        // being offered. (display_name + password stay editable.)
+        if ((def.key === 'role' || def.key === 'status')
+            && isProtectedEmail(editor.record.fields?.email)) {
+          input.disabled = true;
+          input.title = 'Locked owner account — this cannot be changed.';
+        } else {
+          input.addEventListener('change', () => {
+            editor.pendingFields[def.key] = input.value;
+          });
+        }
         break;
       }
       default: {

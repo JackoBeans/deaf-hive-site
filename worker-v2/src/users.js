@@ -41,6 +41,27 @@ import {
 const ROLES    = ['owner', 'admin'];
 const STATUSES = ['active', 'disabled'];
 
+// ── Protected superadmin ───────────────────────────────────────────────
+// These accounts are permanently locked: they can never be deleted,
+// demoted from owner, disabled, or renamed via the API — a deliberate
+// guardrail so a mistaken or compromised owner can't remove the project's
+// root owner and lock everyone out. Display-name and password changes are
+// still allowed so the holder can maintain their own account.
+//
+// Hardcoded ON PURPOSE — an env var could be unset or edited and the lock
+// would silently vanish (fail-open). A constant fails safe. Compared
+// case-insensitively since emails are stored COLLATE NOCASE.
+//
+// Break-glass: direct D1 access (wrangler d1 execute) bypasses this, which
+// is the intended escape hatch — the app layer is not the place to defend
+// against someone who already holds the database credentials.
+const PROTECTED_OWNER_EMAILS = ['mail@markschofield.org'];
+
+function isProtectedEmail(email) {
+  return typeof email === 'string'
+    && PROTECTED_OWNER_EMAILS.includes(email.trim().toLowerCase());
+}
+
 // Cheap RFC-ish email shape check — server is not the right place for
 // "is this a real address" verification (there is no canonical answer),
 // just for catching obvious typos / non-strings.
@@ -137,6 +158,30 @@ async function handleUpdate(request, env, origin, auth, id) {
 
   if (!isOwner && !isSelf) {
     return jsonResponse({ error: 'forbidden' }, 403, env, origin);
+  }
+
+  // Protected-account lock — applies to whoever is editing (an owner can
+  // still change Mark's own display_name/password but never demote,
+  // disable, rename, or — see handleDelete — remove the account).
+  if (isProtectedEmail(before.fields.email)) {
+    if (typeof fields.role === 'string' && fields.role !== 'owner') {
+      return jsonResponse(
+        { error: 'protected_account', message: 'This owner account is locked; its role cannot be changed.' },
+        403, env, origin,
+      );
+    }
+    if (typeof fields.status === 'string' && fields.status !== 'active') {
+      return jsonResponse(
+        { error: 'protected_account', message: 'This owner account is locked; it cannot be disabled.' },
+        403, env, origin,
+      );
+    }
+    if (typeof fields.email === 'string' && !isProtectedEmail(fields.email)) {
+      return jsonResponse(
+        { error: 'protected_account', message: 'This owner account is locked; its email cannot be changed.' },
+        403, env, origin,
+      );
+    }
   }
 
   // Self-edit allows ONLY display_name + password. Owner may set anything,
@@ -254,6 +299,13 @@ async function handleDelete(env, origin, auth, id) {
   }
   const before = await fetchUserById(env, id);
   if (!before) return jsonResponse({ error: 'not_found' }, 404, env, origin);
+
+  if (isProtectedEmail(before.fields.email)) {
+    return jsonResponse(
+      { error: 'protected_account', message: 'This owner account is locked and cannot be deleted.' },
+      403, env, origin,
+    );
+  }
 
   await deleteUser(env, id);
   await writeAuditEntry(env, {
