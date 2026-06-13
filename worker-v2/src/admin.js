@@ -153,6 +153,18 @@ async function handleLogin(request, env, ctx, origin) {
   const userRow = email ? await fetchUserByEmailWithHash(env, email) : null;
   const ok = await verifyPasswordHash(password, userRow?.password_hash || '');
   if (!ok || !userRow || userRow.status !== 'active') {
+    // Record the failed attempt. Fire-and-forget + swallow errors — the
+    // audit write must never change the auth outcome or its timing. actor
+    // is the email that was tried (or '(blank)' if none); entity_id stays
+    // null since we may not have a real account.
+    ctx.waitUntil(
+      writeAuditEntry(env, {
+        actor: email || '(blank)', action: 'login_failed', entity: 'session',
+        diff: { reason: !userRow ? 'no_such_user'
+                      : userRow.status !== 'active' ? 'disabled'
+                      : 'wrong_password' },
+      }).catch(() => {}),
+    );
     return jsonResponse({ error: 'unauthorised' }, 401, env, origin);
   }
 
@@ -160,8 +172,14 @@ async function handleLogin(request, env, ctx, origin) {
   // Extract expires from the token: u<id>.<expires>.<sig>
   const expires = Number(token.split('.')[1]);
 
-  // Don't block the response on the last-login bump.
+  // Don't block the response on the last-login bump or the audit write.
   ctx.waitUntil(touchLastLogin(env, userRow.id));
+  ctx.waitUntil(
+    writeAuditEntry(env, {
+      actor: userRow.email, action: 'login', entity: 'session',
+      entity_id: userRow.id,
+    }).catch(() => {}),
+  );
 
   return jsonResponse({
     token,
@@ -374,6 +392,12 @@ async function handleStatusChange(request, env, url, origin, table, id) {
 async function handleAudit(request, env, origin) {
   const auth = await requireAuth(request, env, origin);
   if (auth.resp) return auth.resp;
+  // Owner-only: the activity log shows every user's actions, so it's
+  // gated like the Users tab. The admin UI hides the tab from non-owners
+  // too, but this is the real boundary.
+  if (auth.user.fields.role !== 'owner') {
+    return jsonResponse({ error: 'forbidden_owner_only' }, 403, env, origin);
+  }
   const url = new URL(request.url);
   const limit = url.searchParams.get('limit');
   const records = await fetchRecentAuditEntries(env, limit);

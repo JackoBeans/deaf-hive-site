@@ -471,6 +471,13 @@ html, body {
 
 /* Row click affordance */
 .data-table tbody tr { cursor: pointer; }
+/* Activity log is read-only — no row-click, no pointer affordance. */
+.data-table.is-readonly tbody tr { cursor: default; }
+.data-table.is-readonly tbody tr:hover { background: transparent; }
+.activity-details {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+}
 
 /* Per-row delete button (lives in last column) */
 .row-actions {

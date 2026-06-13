@@ -335,12 +335,14 @@
 
   // Show owner-only UI bits (currently: the Users tab) based on currentUser.
   function applyRoleVisibility() {
-    const usersBtn = document.querySelector('.tab-btn[data-tab="users"]');
-    if (!usersBtn) return;
     const isOwner = currentUser?.role === 'owner';
-    usersBtn.hidden = !isOwner;
-    // If a non-owner is somehow stuck on the users tab, kick them home.
-    if (!isOwner && currentTab === 'users') {
+    // Users + Activity are owner-only tabs.
+    for (const tab of ['users', 'activity']) {
+      const btn = document.querySelector(`.tab-btn[data-tab="${tab}"]`);
+      if (btn) btn.hidden = !isOwner;
+    }
+    // If a non-owner is somehow stuck on an owner-only tab, kick them home.
+    if (!isOwner && (currentTab === 'users' || currentTab === 'activity')) {
       currentTab = 'organisations';
       for (const b of $tabStrip.querySelectorAll('.tab-btn')) {
         const active = b.dataset.tab === 'organisations';
@@ -386,6 +388,16 @@
       { key: 'last_login_at', label: 'Last login',    render: epoch },
       { key: 'created_at',    label: 'Created',       render: epoch },
       { key: '__actions',     label: '',              render: userActionsCell },
+    ],
+    // Read-only activity log (owner-only). No row actions — these rows
+    // are immutable history, not editable records.
+    activity: [
+      { key: 'at',        label: 'When',    render: epochDateTime },
+      { key: 'actor',     label: 'Who',     render: text },
+      { key: 'action',    label: 'Action',  render: actionLabel },
+      { key: 'entity',    label: 'Type',    render: text },
+      { key: 'entity_id', label: 'Record',  render: recordRef },
+      { key: 'diff',      label: 'Details', render: (v, rec) => activityDetails(rec) },
     ],
     organisations: [
       { key: 'name',           label: 'Name',     render: text },
@@ -571,6 +583,76 @@
     return document.createTextNode(fmt.format(d));
   }
 
+  // ── Activity-log renderers (read-only) ──────────────────────────────
+
+  function epochDateTime(secs) {
+    if (!secs) return muted('—');
+    const d = new Date(secs * 1000);
+    if (isNaN(d)) return muted('—');
+    const fmt = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+    return document.createTextNode(fmt.format(d));
+  }
+
+  // Action shown as a coloured pill — green for benign, red for the two
+  // destructive/security-relevant ones.
+  const ACTION_TONE = {
+    create: 'approved', update: 'draft', status_change: 'draft',
+    approve: 'approved', reject: 'rejected', delete: 'rejected',
+    login: 'approved', login_failed: 'rejected',
+  };
+  function actionLabel(action) {
+    if (!action) return muted('—');
+    const span = document.createElement('span');
+    span.className = `badge is-${ACTION_TONE[action] || 'draft'}`;
+    span.textContent = String(action).replace(/_/g, ' ');
+    return span;
+  }
+
+  function recordRef(id) {
+    if (id == null) return muted('—');
+    return document.createTextNode(`#${id}`);
+  }
+
+  // One-line human summary of the diff_json, branching on its shape
+  // (see worker-v2/src/admin.js + users.js for what each action stores).
+  function activityDetails(rec) {
+    const f = rec.fields || {};
+    const diff = f.diff;
+    if (!diff || typeof diff !== 'object') {
+      if (f.action === 'login') return muted('signed in');
+      return muted('—');
+    }
+    const short = (v) => {
+      if (v == null || v === '') return '∅';
+      if (Array.isArray(v)) return v.join(', ') || '∅';
+      const s = typeof v === 'object' ? JSON.stringify(v) : String(v);
+      return s.length > 40 ? s.slice(0, 39) + '…' : s;
+    };
+    let txt;
+    if (diff.before && diff.after) {
+      // update / status_change — show key: old → new
+      txt = Object.keys(diff.after)
+        .map(k => `${k}: ${short(diff.before[k])} → ${short(diff.after[k])}`)
+        .join('; ');
+    } else if (diff.after) {
+      txt = Object.entries(diff.after).map(([k, v]) => `${k}=${short(v)}`).join(', ');
+    } else if (diff.before) {
+      txt = 'was ' + Object.entries(diff.before).map(([k, v]) => `${k}=${short(v)}`).join(', ');
+    } else if (diff.password_changed) {
+      txt = `password changed${diff.via ? ` (${diff.via})` : ''}`;
+    } else if (diff.reason) {
+      txt = `reason: ${diff.reason}`;
+    } else if (diff.source) {
+      txt = `source: ${diff.source}`;
+    } else {
+      txt = short(diff);
+    }
+    const span = document.createElement('span');
+    span.className = 'activity-details';
+    span.textContent = txt || '—';
+    return span;
+  }
+
   function orderPin(n) {
     if (n == null) return muted('—');
     const span = document.createElement('span');
@@ -591,16 +673,21 @@
     setState('loading');
     $rowCount.textContent = '';
 
-    // Users tab has no Status filter; hide the control on that tab.
+    // Users + Activity tabs have no Status filter; hide the control there.
+    // Activity is read-only, so hide the "+ New" button too.
+    const noStatus = currentTab === 'users' || currentTab === 'activity';
     const $statusWrap = $statusFilter.closest('.toolbar')?.querySelector('label[for="status-filter"]') || null;
-    $statusFilter.hidden = currentTab === 'users';
-    if ($statusWrap) $statusWrap.hidden = currentTab === 'users';
+    $statusFilter.hidden = noStatus;
+    if ($statusWrap) $statusWrap.hidden = noStatus;
+    $newBtn.hidden = currentTab === 'activity';
 
     const status = $statusFilter.value;
     let data;
     try {
       const path = currentTab === 'users'
         ? '/admin/users'
+        : currentTab === 'activity'
+        ? '/admin/audit?limit=200'
         : `/admin/${currentTab}?status=${encodeURIComponent(status)}`;
       const res = await apiCall(path);
       if (!res.ok) {
@@ -632,6 +719,8 @@
 
   function renderTable(tab, records) {
     const cols = COLUMNS[tab] || [];
+    // Activity rows aren't clickable — drop the row-pointer affordance.
+    $table.classList.toggle('is-readonly', tab === 'activity');
 
     // Header
     while ($thead.firstChild) $thead.removeChild($thead.firstChild);
@@ -663,6 +752,8 @@
   $tbody.addEventListener('click', async (e) => {
     const tr = e.target.closest('tr[data-id]');
     if (!tr) return;
+    // Activity rows are immutable history — no edit/delete, no row-click.
+    if (currentTab === 'activity') return;
     const id = Number(tr.dataset.id);
 
     // Delete button click

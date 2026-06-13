@@ -702,6 +702,7 @@ export function sweepExpiredResets(env, ctx) {
 
 const AUDIT_ACTIONS = [
   'create', 'update', 'delete', 'approve', 'reject', 'status_change',
+  'login', 'login_failed',
 ];
 
 export async function writeAuditEntry(env, {
