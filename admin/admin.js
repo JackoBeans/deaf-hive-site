@@ -929,12 +929,25 @@
       }
       case 'choice': {
         input = document.createElement('select');
-        for (const opt of def.options || []) {
+        const choiceOpts = def.options || [];
+        // The value a <select> displays by default is its first option,
+        // but that value is only captured on a 'change' event. On create
+        // there's no saved value, so an untouched dropdown would submit
+        // nothing and the server would apply its own default — e.g. the
+        // Role field shows "owner" (first option) but the server defaults
+        // an absent role to "admin". Resolve the option the control
+        // actually shows and seed it into pendingFields on create so
+        // "what you see" is "what you save".
+        const shown = choiceOpts.includes(value) ? value : choiceOpts[0];
+        for (const opt of choiceOpts) {
           const o = document.createElement('option');
           o.value = opt;
           o.textContent = opt;
-          if (value === opt) o.selected = true;
+          if (opt === shown) o.selected = true;
           input.appendChild(o);
+        }
+        if (editor.mode === 'create' && shown != null) {
+          editor.pendingFields[def.key] = shown;
         }
         input.addEventListener('change', () => {
           editor.pendingFields[def.key] = input.value;
