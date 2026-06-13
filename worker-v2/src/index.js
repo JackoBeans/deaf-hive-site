@@ -50,7 +50,7 @@ import { handleAdmin } from './admin.js';
 import { handleSubmissions } from './submissions.js';
 import { handleMedia } from './media.js';
 
-const VERSION = '0.9.0-protected-owner';
+const VERSION = '0.9.1-cors-patch';
 
 // ── Phase 0 probes (kept for ongoing health checks) ────────────────────
 

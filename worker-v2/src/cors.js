@@ -31,7 +31,7 @@ export function preflightResponse(env, origin) {
     status: 204,
     headers: {
       ...corsHeaders(env, origin),
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Purge-Token',
       'Access-Control-Max-Age': '86400',
     },
