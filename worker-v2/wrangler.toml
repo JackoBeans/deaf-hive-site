@@ -28,8 +28,9 @@ bucket_name = "deafhive-images"
 # ADMIN_TOKEN_SECRET  — HMAC key for signing session tokens
 # PURGE_SECRET        — bearer token for /purge (same model as v1 worker)
 # TURNSTILE_SECRET    — Cloudflare Turnstile server-side key
-# RESEND_API_KEY      — Resend API key (added in Phase 4)
-# NOTIFY_RECIPIENTS   — comma-separated email list (added in Phase 4)
+# BREVO_API_KEY       — Brevo SMTP API key (xkeysib-...) for outbound email
+# NOTIFY_RECIPIENTS   — comma-separated email list (submission notifications)
+# MAIL_FROM           — sender, "Name <verified@addr>" (verified in Brevo)
 
 # Vars (non-secret config)
 [vars]

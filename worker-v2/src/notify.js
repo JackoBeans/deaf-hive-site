@@ -1,26 +1,35 @@
 // ════════════════════════════════════════════════════════════════════════
-// Resend — outbound email (submission notifications + password resets).
+// Brevo — outbound email (submission notifications + password resets).
 //
 // Reads:
-//   RESEND_API_KEY      — starts with "re_..."
+//   BREVO_API_KEY       — Brevo SMTP API key (starts with "xkeysib-...")
 //   NOTIFY_RECIPIENTS   — comma-separated list, used by notifySubmission
-//   MAIL_FROM           — optional sender override (see DEFAULT_FROM)
+//   MAIL_FROM           — sender, as "Name <email>" or "email" (see below)
 //
-// From address defaults to `onboarding@resend.dev` — Resend's free-tier
-// sender, which works with NO DNS verification but only delivers to the
-// Resend account owner's own address. Once a sending domain is verified
-// in Resend, set the MAIL_FROM secret to e.g.
-// `DeafHive <notifications@deafhive.online>` and sends reach anyone —
-// no code change or redeploy needed (secrets apply immediately).
+// Brevo has no universal free sender — the MAIL_FROM address must be a
+// VERIFIED sender (or on a verified domain) in the Brevo dashboard, or
+// the send is rejected. The single-sender route needs no DNS: verify one
+// address by clicking the link Brevo emails to it, then send from it to
+// anyone. To change the sender later, verify the new address/domain in
+// Brevo and update the MAIL_FROM secret — no code change or redeploy
+// (secrets apply immediately). DEFAULT_FROM is the planned first sender
+// so it works out of the box once that address is verified.
 //
 // All sends are fire-and-forget via ctx.waitUntil. Send failures log +
 // swallow — the calling flow (a submission or a reset) must not break
 // because email is slow/down.
 // ════════════════════════════════════════════════════════════════════════
 
-const RESEND_URL = 'https://api.resend.com/emails';
-const DEFAULT_FROM = 'DeafHive <onboarding@resend.dev>';
+const BREVO_URL = 'https://api.brevo.com/v3/smtp/email';
+const DEFAULT_FROM = 'DeafHive <mail@markschofield.org>';
 const PUBLIC_SITE = 'https://deafhive.online';
+
+// Parse "Name <email>" or a bare "email" into Brevo's {name, email} shape.
+function parseSender(from) {
+  const m = /^\s*(.*?)\s*<([^>]+)>\s*$/.exec(from || '');
+  if (m) return { name: m[1] || 'DeafHive', email: m[2].trim() };
+  return { name: 'DeafHive', email: (from || '').trim() };
+}
 
 const TAB_FOR = {
   organisation: 'organisations',
@@ -38,8 +47,8 @@ function recipients(env) {
 // Shared fire-and-forget sender. Logs failures with a caller-chosen
 // tag so notify-vs-reset errors stay distinguishable in Worker logs.
 function sendEmail(env, ctx, { to, subject, text, logTag }) {
-  if (!env.RESEND_API_KEY) {
-    console.warn(`${logTag}: skipped — RESEND_API_KEY not set`);
+  if (!env.BREVO_API_KEY) {
+    console.warn(`${logTag}: skipped — BREVO_API_KEY not set`);
     return;
   }
   if (!Array.isArray(to) || to.length === 0) {
@@ -48,17 +57,23 @@ function sendEmail(env, ctx, { to, subject, text, logTag }) {
   }
   const send = async () => {
     try {
-      const res = await fetch(RESEND_URL, {
+      const res = await fetch(BREVO_URL, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${env.RESEND_API_KEY}`,
+          'api-key':       env.BREVO_API_KEY,
           'Content-Type':  'application/json',
+          'accept':        'application/json',
         },
-        body: JSON.stringify({ from: env.MAIL_FROM || DEFAULT_FROM, to, subject, text }),
+        body: JSON.stringify({
+          sender:      parseSender(env.MAIL_FROM || DEFAULT_FROM),
+          to:          to.map(email => ({ email })),
+          subject,
+          textContent: text,
+        }),
       });
       if (!res.ok) {
         const detail = await res.text().catch(() => '');
-        console.warn(`${logTag}: Resend ${res.status} — ${detail.slice(0, 240)}`);
+        console.warn(`${logTag}: Brevo ${res.status} — ${detail.slice(0, 240)}`);
       }
     } catch (err) {
       console.warn(`${logTag}: send failed`, err?.message || err);
