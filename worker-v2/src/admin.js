@@ -69,6 +69,7 @@ import {
 import { notifyPasswordReset } from './notify.js';
 import { handleUpload, handleUploadDelete } from './images.js';
 import { handleUsers } from './users.js';
+import { checkAuthRateLimit } from './rate-limit.js';
 
 import { READ_PATHS } from './reads.js';
 
@@ -137,7 +138,23 @@ async function purgePublicCaches(env, url) {
 
 // ── Auth endpoints ─────────────────────────────────────────────────────
 
+// Shared throttle for the unauthenticated auth endpoints (login / forgot /
+// reset). Returns a 429 response when the caller's IP has exceeded the auth
+// attempt budget (10 / 15 min — see rate-limit.js), otherwise null. Counts
+// every attempt up front so an attacker can't earn free retries by
+// occasionally succeeding; the cap is generous enough not to bother humans.
+async function authRateLimited(env, request, origin) {
+  const rl = await checkAuthRateLimit(env, request);
+  if (rl.ok) return null;
+  return jsonResponse(
+    { error: 'rate_limited', retry_after_seconds: rl.retry_after },
+    429, env, origin,
+  );
+}
+
 async function handleLogin(request, env, ctx, origin) {
+  const limited = await authRateLimited(env, request, origin);
+  if (limited) return limited;
   if (!env.ADMIN_TOKEN_SECRET) {
     return jsonResponse({ error: 'auth_not_configured' }, 503, env, origin);
   }
@@ -458,6 +475,8 @@ async function handleChangePassword(request, env, origin) {
 // we issue a 1-hour token and try to email it via Resend (silent skip
 // if Resend isn't set up yet — see notify.js).
 async function handleForgotPassword(request, env, ctx, origin) {
+  const limited = await authRateLimited(env, request, origin);
+  if (limited) return limited;
   const { body, resp: bodyResp } = await readJsonBody(request, env, origin);
   if (bodyResp) return bodyResp;
 
@@ -498,6 +517,8 @@ async function handleForgotPassword(request, env, ctx, origin) {
 // invalid/expired/used token — same error for all three to avoid
 // confirming which case happened.
 async function handleResetPassword(request, env, origin) {
+  const limited = await authRateLimited(env, request, origin);
+  if (limited) return limited;
   const { body, resp: bodyResp } = await readJsonBody(request, env, origin);
   if (bodyResp) return bodyResp;
 

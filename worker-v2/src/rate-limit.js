@@ -18,6 +18,14 @@
 const WINDOW_SECONDS = 60 * 60;   // 1 hour
 const MAX_PER_WINDOW = 3;
 
+// Admin auth endpoints (login / forgot / reset) get their OWN bucket:
+// tighter window, higher cap. 10 attempts / 15 min / IP is generous for a
+// human fumbling a password but throttles online brute-force. Stored in the
+// same submission_quota table under a namespaced ('auth:') hash key, so no
+// schema change is needed and it never shares a counter with submissions.
+const AUTH_WINDOW_SECONDS = 15 * 60;  // 15 minutes
+const AUTH_MAX_PER_WINDOW = 10;
+
 async function sha256Hex(s) {
   const bytes = new TextEncoder().encode(s);
   const hash  = await crypto.subtle.digest('SHA-256', bytes);
@@ -32,18 +40,18 @@ function clientIp(request) {
 
 const NOW = () => Math.floor(Date.now() / 1000);
 
-// Returns { ok: true } if the submission is allowed (and increments the
-// counter), or { ok: false, retry_after } if the cap is reached.
-export async function checkAndCount(env, request) {
-  const ipHash = await sha256Hex(clientIp(request));
-  const now    = NOW();
+// Core IP-bucket check against submission_quota. `key` is an already-hashed,
+// namespaced bucket id. Returns { ok: true } (and increments the counter)
+// while under the cap, or { ok: false, retry_after } once the cap is reached.
+async function checkBucket(env, key, maxPerWindow, windowSeconds) {
+  const now = NOW();
 
   const row = await env.DB
     .prepare('SELECT count, window_start FROM submission_quota WHERE ip_hash = ?')
-    .bind(ipHash).first();
+    .bind(key).first();
 
   // Fresh window if nothing exists OR previous window expired.
-  if (!row || (now - row.window_start) >= WINDOW_SECONDS) {
+  if (!row || (now - row.window_start) >= windowSeconds) {
     await env.DB
       .prepare(
         `INSERT INTO submission_quota (ip_hash, count, window_start)
@@ -51,22 +59,33 @@ export async function checkAndCount(env, request) {
          ON CONFLICT(ip_hash) DO UPDATE
            SET count = 1, window_start = excluded.window_start`,
       )
-      .bind(ipHash, now).run();
+      .bind(key, now).run();
     return { ok: true };
   }
 
   // Same window — check the cap before counting.
-  if (row.count >= MAX_PER_WINDOW) {
-    return {
-      ok: false,
-      retry_after: WINDOW_SECONDS - (now - row.window_start),
-    };
+  if (row.count >= maxPerWindow) {
+    return { ok: false, retry_after: windowSeconds - (now - row.window_start) };
   }
 
   await env.DB
     .prepare('UPDATE submission_quota SET count = count + 1 WHERE ip_hash = ?')
-    .bind(ipHash).run();
+    .bind(key).run();
   return { ok: true };
+}
+
+// Public submissions: 3 / IP / hour. Returns { ok } or { ok:false, retry_after }.
+export async function checkAndCount(env, request) {
+  const ipHash = await sha256Hex(clientIp(request));
+  return checkBucket(env, ipHash, MAX_PER_WINDOW, WINDOW_SECONDS);
+}
+
+// Admin auth (login / forgot-password / reset-password): 10 / IP / 15 min.
+// The 'auth:' prefix namespaces the hash so this shares the table without
+// ever sharing a counter with the public submission limiter above.
+export async function checkAuthRateLimit(env, request) {
+  const key = await sha256Hex('auth:' + clientIp(request));
+  return checkBucket(env, key, AUTH_MAX_PER_WINDOW, AUTH_WINDOW_SECONDS);
 }
 
 // Periodic janitor — purges rows whose window has expired. Cheap to

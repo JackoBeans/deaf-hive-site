@@ -50,7 +50,7 @@ import { handleAdmin } from './admin.js';
 import { handleSubmissions } from './submissions.js';
 import { handleMedia } from './media.js';
 
-const VERSION = '0.11.0-brevo';
+const VERSION = '0.12.0-auth-ratelimit';
 
 // ── Phase 0 probes (kept for ongoing health checks) ────────────────────
 

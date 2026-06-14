@@ -162,10 +162,10 @@ function makeSubmissionHandler({ type, validator, creator, entityName }) {
     try {
       id = await creator(env, v.fields);
     } catch (err) {
-      return jsonResponse(
-        { error: 'create_failed', message: String(err?.message || err) },
-        400, env, origin,
-      );
+      // Log the real reason server-side; never echo raw D1 errors (which can
+      // carry column/constraint names) back to an unauthenticated caller.
+      console.warn(`submission ${entityName} create failed`, err?.message || err);
+      return jsonResponse({ error: 'create_failed' }, 400, env, origin);
     }
 
     // Audit + notify are post-response work — the submitter doesn't need
@@ -267,10 +267,8 @@ async function handlePublicUpload(request, env, ctx, origin) {
   try {
     await env.MEDIA.put(key, file.stream(), { httpMetadata: { contentType: mime } });
   } catch (err) {
-    return jsonResponse(
-      { error: 'upload_failed', message: String(err?.message || err) },
-      500, env, origin,
-    );
+    console.warn('public upload failed', err?.message || err);
+    return jsonResponse({ error: 'upload_failed' }, 500, env, origin);
   }
 
   return jsonResponse({ ok: true, key, url: mediaUrl(env, key) }, 200, env, origin);

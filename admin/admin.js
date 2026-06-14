@@ -288,6 +288,15 @@
         $loginError.hidden = false;
         return;
       }
+      if (res.status === 429) {
+        const data = await res.json().catch(() => ({}));
+        const secs = Number(data.retry_after_seconds) || 0;
+        const mins = Math.max(1, Math.ceil(secs / 60));
+        $loginError.textContent =
+          `Too many sign-in attempts. Please wait about ${mins} minute${mins === 1 ? '' : 's'} and try again.`;
+        $loginError.hidden = false;
+        return;
+      }
       if (!res.ok) {
         $loginError.textContent = `Login failed (${res.status}).`;
         $loginError.hidden = false;
