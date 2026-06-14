@@ -4,15 +4,22 @@
 // Reads:
 //   RESEND_API_KEY      — starts with "re_..."
 //   NOTIFY_RECIPIENTS   — comma-separated list, used by notifySubmission
+//   MAIL_FROM           — optional sender override (see DEFAULT_FROM)
 //
-// From address is `onboarding@resend.dev` (Resend's free-tier sender,
-// no DNS verification needed). All sends are fire-and-forget via
-// ctx.waitUntil. Send failures log + swallow — the calling flow (a
-// submission or a reset) must not break because email is slow/down.
+// From address defaults to `onboarding@resend.dev` — Resend's free-tier
+// sender, which works with NO DNS verification but only delivers to the
+// Resend account owner's own address. Once a sending domain is verified
+// in Resend, set the MAIL_FROM secret to e.g.
+// `DeafHive <notifications@deafhive.online>` and sends reach anyone —
+// no code change or redeploy needed (secrets apply immediately).
+//
+// All sends are fire-and-forget via ctx.waitUntil. Send failures log +
+// swallow — the calling flow (a submission or a reset) must not break
+// because email is slow/down.
 // ════════════════════════════════════════════════════════════════════════
 
 const RESEND_URL = 'https://api.resend.com/emails';
-const FROM = 'DeafHive Submissions <onboarding@resend.dev>';
+const DEFAULT_FROM = 'DeafHive <onboarding@resend.dev>';
 const PUBLIC_SITE = 'https://deafhive.online';
 
 const TAB_FOR = {
@@ -47,7 +54,7 @@ function sendEmail(env, ctx, { to, subject, text, logTag }) {
           'Authorization': `Bearer ${env.RESEND_API_KEY}`,
           'Content-Type':  'application/json',
         },
-        body: JSON.stringify({ from: FROM, to, subject, text }),
+        body: JSON.stringify({ from: env.MAIL_FROM || DEFAULT_FROM, to, subject, text }),
       });
       if (!res.ok) {
         const detail = await res.text().catch(() => '');

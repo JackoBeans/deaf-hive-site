@@ -50,7 +50,7 @@ import { handleAdmin } from './admin.js';
 import { handleSubmissions } from './submissions.js';
 import { handleMedia } from './media.js';
 
-const VERSION = '0.10.0-activity-log';
+const VERSION = '0.10.1-mail-from-env';
 
 // ── Phase 0 probes (kept for ongoing health checks) ────────────────────
 
