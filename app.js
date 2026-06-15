@@ -288,6 +288,13 @@ async function initSection(section, onCardClick) {
     return;
   }
 
+  // Structured data (JSON-LD) for search engines — built from the records
+  // we just fetched. Wrapped so a schema bug can never break rendering.
+  if (section.endpoint === '/organisations') {
+    try { injectOrganisationSchema(records); }
+    catch (err) { console.warn('organisation schema injection failed', err); }
+  }
+
   // Filter state: Map<fieldId, Set<value>>. OR within a field, AND across fields.
   const selected = new Map();
   (section.filterFields || []).forEach(f => selected.set(f.id, new Set()));
@@ -951,6 +958,11 @@ const EVENT_WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
         .map(r => ({ ...r, eventDate: parseEventDate(r.fields && r.fields[f.date]) }))
         .filter(r => r.eventDate)
         .sort((a, b) => a.eventDate - b.eventDate);
+
+      // Structured data (JSON-LD) for search engines, built from the same
+      // records. Wrapped so a schema bug can never break the calendar.
+      try { injectEventSchema(state.records); }
+      catch (err) { console.warn('event schema injection failed', err); }
 
       els.status.hidden = true;
       els.block.hidden = false;
@@ -1837,4 +1849,112 @@ function MOCK_EVENT_RECORDS() {
       mockAddress: '',
     }},
   ];
+}
+
+// ════════════════════════════════════════════════════════════════════════
+// STRUCTURED DATA (JSON-LD) — built from the listings after they load.
+//
+// The directory content is fetched client-side, so it can't live in the
+// static HTML. Instead we build schema.org ItemLists from the same records
+// app.js already renders and inject them into <head>. Google executes JS and
+// reads dynamically-added JSON-LD, so this makes the organisations and events
+// machine-readable for search. Non-JS crawlers still won't see it — that
+// needs server-side rendering (tracked separately as SEO-1).
+//
+// Safety: written via DOM textContent (never innerHTML), and every '<' in the
+// JSON is escaped to <, so a stray '</script>' inside a user-submitted
+// name or description can't break out of the <script> element.
+// ════════════════════════════════════════════════════════════════════════
+
+const LD_SITE_URL = 'https://deafhive.online/';
+
+function upsertJsonLd(id, obj) {
+  let el = document.getElementById(id);
+  if (!el) {
+    el = document.createElement('script');
+    el.type = 'application/ld+json';
+    el.id = id;
+    document.head.appendChild(el);
+  }
+  el.textContent = JSON.stringify(obj).replace(/</g, '\\u003c');
+}
+
+// Markdown-ish → single-line plain text, length-capped. Used for descriptions
+// so JSON-LD carries clean prose, not '**bold**' / '[text](url)' syntax.
+function ldPlainText(value, maxLen) {
+  if (typeof value !== 'string') return '';
+  let s = value
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')   // [text](url) → text
+    .replace(/\*\*([^*]+)\*\*/g, '$1')          // **bold** → bold
+    .replace(/\s+/g, ' ')                        // collapse whitespace/newlines
+    .trim();
+  if (maxLen && s.length > maxLen) s = s.slice(0, maxLen - 1).replace(/\s+\S*$/, '') + '…';
+  return s;
+}
+
+function ldTrim(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function injectOrganisationSchema(records) {
+  const f = SECTIONS.organisations.fields;
+  const items = [];
+  records.forEach(rec => {
+    const fields = rec.fields || {};
+    const name = ldTrim(fields[f.title]);
+    if (!name) return;
+    const org = { '@type': 'Organization', name };
+    const website = safeUrl(String(fields[f.website] || ''));
+    if (website) org.url = website;
+    const logo = getAttachmentUrl(fields[f.logo]);
+    if (logo) org.logo = logo;
+    const about = ldPlainText(fields[f.about], 300);
+    if (about) org.description = about;
+    const address = ldTrim(fields.address);
+    if (address) org.address = address;
+    const email = ldTrim(fields[f.email]);
+    if (email) org.email = email;
+    items.push({ '@type': 'ListItem', position: items.length + 1, item: org });
+  });
+  if (!items.length) return;
+  upsertJsonLd('ld-organisations', {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'Deaf community organisations',
+    url: LD_SITE_URL + '#directory-embed',
+    numberOfItems: items.length,
+    itemListElement: items,
+  });
+}
+
+function injectEventSchema(records) {
+  const f = EVENTS_CONFIG.fields;
+  const items = [];
+  records.forEach(rec => {
+    const fields = rec.fields || {};
+    const name = ldTrim(fields[f.eventName]);
+    const startDate = ldTrim(fields[f.date]);
+    if (!name || !startDate) return;
+    const ev = { '@type': 'Event', name, startDate };
+    // Location only when we actually know it — don't fabricate a place
+    // (an inaccurate location is worse than an omitted one for Google).
+    const address = ldTrim(fields[f.address]);
+    if (address) ev.location = { '@type': 'Place', name: address, address };
+    const details = ldPlainText(fields[f.details], 300);
+    if (details) ev.description = details;
+    const poster = getAttachmentUrl(fields[f.poster]);
+    if (poster) ev.image = poster;
+    const org = ldTrim(fields[f.organisation]);
+    if (org) ev.organizer = { '@type': 'Organization', name: org };
+    items.push({ '@type': 'ListItem', position: items.length + 1, item: ev });
+  });
+  if (!items.length) return;
+  upsertJsonLd('ld-events', {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'BSL events & Deaf community events',
+    url: LD_SITE_URL + '#events',
+    numberOfItems: items.length,
+    itemListElement: items,
+  });
 }
