@@ -2,6 +2,13 @@
 <html lang="en-GB">
 <head>
   <meta charset="UTF-8" />
+  <!-- Content-Security-Policy backstop (S3). GitHub Pages can't send HTTP
+       headers and meta CSP can't be report-only, so this is enforced. Allows
+       Google Fonts, YouTube (nocookie) embeds + i.ytimg thumbnails, and the
+       worker API / R2 media. script-src 'self' is safe here: there are no
+       inline scripts or on*= handlers, and the JSON-LD blocks (static and
+       app.js-injected) are non-executing data, exempt from script-src. -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://i.ytimg.com https://directory-proxy-v2.silent-term-d0e4.workers.dev; connect-src 'self' https://directory-proxy-v2.silent-term-d0e4.workers.dev; frame-src https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DeafHive — a central online space for the Deaf community</title>
   <meta name="description" content="A central online space for the Deaf community, bringing together local events, BSL videos, services and support.">

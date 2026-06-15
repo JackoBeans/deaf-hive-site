@@ -2,6 +2,10 @@
 <html lang="en-GB">
 <head>
   <meta charset="UTF-8">
+  <!-- Content-Security-Policy backstop (S3). Allows Google Fonts, the
+       Turnstile widget (challenges.cloudflare.com script + frame), and the
+       worker API / R2 media. Enforced (meta CSP can't be report-only). -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://challenges.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://directory-proxy-v2.silent-term-d0e4.workers.dev; connect-src 'self' https://directory-proxy-v2.silent-term-d0e4.workers.dev https://challenges.cloudflare.com; frame-src https://challenges.cloudflare.com; object-src 'none'; base-uri 'self'; form-action 'self'">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <title>DeafHive — Submit a video</title>

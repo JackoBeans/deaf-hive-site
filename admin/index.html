@@ -2,6 +2,13 @@
 <html lang="en-GB">
 <head>
   <meta charset="UTF-8">
+  <!-- Content-Security-Policy backstop (S3). GitHub Pages can't send HTTP
+       headers, and meta CSP can't be report-only, so this is enforced. Admin
+       uses system fonts + its own JS/CSS and talks only to the worker API +
+       R2 media. (frame-ancestors / X-Frame-Options can't be set via meta.) -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://directory-proxy-v2.silent-term-d0e4.workers.dev; connect-src 'self' https://directory-proxy-v2.silent-term-d0e4.workers.dev; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <!-- Keep the ?reset=<token> URL out of cross-origin Referer headers (S6). -->
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex, nofollow">
   <title>DeafHive — Admin</title>
