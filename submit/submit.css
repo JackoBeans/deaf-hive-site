@@ -291,7 +291,7 @@ fieldset.field > legend {
 .chip input { position: absolute; opacity: 0; pointer-events: none; }
 .chip.is-checked {
   background: var(--navy);
-  color: var(--white);
+  color: #fff;            /* was var(--white) — undefined here, fell back to navy-on-navy (invisible) */
   border-color: var(--navy);
 }
 

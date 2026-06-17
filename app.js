@@ -1101,6 +1101,13 @@ function wireEventListeners(els, state, rerender) {
     }
   });
 
+  // Escape closes any open dropdown and returns focus to its trigger button
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Escape') return;
+    if (!els.timeMenu.hidden) { closeAllEventMenus(els); els.timeBtn.focus(); }
+    else if (!els.orgMenu.hidden) { closeAllEventMenus(els); els.orgBtn.focus(); }
+  });
+
   // Search
   els.search.addEventListener('input', () => {
     state.searchQuery = els.search.value.trim();
@@ -1623,9 +1630,11 @@ function populateEventDetail(els, record, fields) {
     const posterUrl = fields.poster ? getAttachmentUrl(f[fields.poster], 'full') : null;
     if (posterUrl) {
       els.posterImg.src = posterUrl;
+      els.posterImg.alt = (String(f[fields.eventName] || '').trim() || 'Event') + ' — event poster';
       els.posterWrap.hidden = false;
     } else {
       els.posterImg.removeAttribute('src');
+      els.posterImg.alt = '';
       els.posterWrap.hidden = true;
     }
   }

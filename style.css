@@ -788,8 +788,8 @@ footer {
   }
 
   .card { padding: 28px 20px; }
-  .hero-card, .two-col, .archive-card { flex-direction: column; }
-  .hero-vid, .side-vid, .archive-vid { width: 100% !important; }
+  .hero-card, .two-col { flex-direction: column; }
+  .hero-vid, .side-vid { width: 100% !important; }
   .hero-text h1 { font-size: 2rem; }
   .find-grid { grid-template-columns: 1fr; }
 }
@@ -1987,9 +1987,18 @@ footer {
 .airtable-card:focus-visible,
 .event-agenda-card:focus-visible,
 .event-pill:focus-visible,
-.event-view-btn:focus-visible,
 .event-nav-btn:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: 2px;
   box-shadow: var(--focus-ring-halo);
+}
+
+/* Reduced motion — neutralise the event-card hover lift. Defined after the
+   card :hover rules (and the earlier reduced-motion blocks) so it wins on
+   source order. */
+@media (prefers-reduced-motion: reduce) {
+  .event-agenda-card,
+  .event-day-card { transition: none; }
+  .event-agenda-card:hover,
+  .event-day-card:hover { transform: none; }
 }

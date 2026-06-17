@@ -97,13 +97,13 @@
     $bannerOk.textContent = message;
     $bannerOk.hidden = false;
     $bannerErr.hidden = true;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }
   function showErr(message) {
     $bannerErr.textContent = message;
     $bannerErr.hidden = false;
     $bannerOk.hidden = true;
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }
 
   /** Flag a required field as invalid: red border (via aria-invalid),
