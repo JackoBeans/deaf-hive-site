@@ -75,12 +75,27 @@ production data. For backend work, run the Worker locally — see
 
 ## Deploying
 
-- **Frontend**: push to `main`. GitHub Pages serves the repo root at
-  `deafhive.online` (the `CNAME` file sets the custom domain).
+- **Frontend**: push to `main`. A **GitHub Actions** workflow
+  ([`.github/workflows/deploy.yml`](.github/workflows/deploy.yml)) assembles the
+  site, runs the prerender step, and deploys to GitHub Pages at `deafhive.online`
+  (the `CNAME` file sets the custom domain). It also runs on a daily schedule and
+  on manual dispatch. The repo's **Pages source must be "GitHub Actions"**
+  (Settings → Pages → Build and deployment → Source).
 - **Backend**: `wrangler deploy --config worker-v2/wrangler.toml`.
 
 The frontend's `WORKER_URL` is pinned in three files, all the same value:
 `app.js`, `admin/admin.js`, `submit/submit.js`.
+
+### Prerender (SEO)
+
+The directory and events render client-side from the Worker, so the build runs
+[`scripts/prerender.mjs`](scripts/prerender.mjs) to fetch the live data and write
+crawlable static HTML — dedicated `/directory/` and `/events/` pages (with JSON-LD)
+plus an org-card + `<noscript>` events fallback baked into the homepage (which
+`app.js` re-renders for JS users). The build publishes **only** the public site:
+repo-only files (`worker-v2/`, `docs/`, `scripts/`, `*.md`) are excluded. Generated
+output goes to `_site/` (the deploy artifact) and is never committed. Run it
+locally against a throwaway copy: `cp -R . /tmp/b && node scripts/prerender.mjs /tmp/b`.
 
 ## Worker secrets
 
@@ -107,6 +122,8 @@ deafhive-site/
 ├── index.html · style.css · app.js     ← public directory / calendar / videos
 ├── admin/               ← staff moderation UI (HTML/CSS/JS)
 ├── submit/              ← public submission forms (org / event / video)
+├── scripts/             ← build tooling (prerender.mjs — SEO prerender)
+├── .github/workflows/   ← deploy.yml (Actions build + prerender + Pages deploy)
 ├── worker-v2/           ← Cloudflare Worker backend (D1 + R2)
 │   ├── wrangler.toml · schema.sql · migrations/
 │   ├── src/             ← reads, admin, auth, users, submissions, media, …
