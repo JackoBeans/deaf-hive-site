@@ -1622,15 +1622,18 @@ footer {
 .event-grid { display: grid; gap: 8px; }
 @media (min-width: 768px) { .event-grid { gap: 12px; } }
 
-.event-grid-week { grid-template-columns: repeat(2, 1fr); }
-@media (min-width: 768px) { .event-grid-week { grid-template-columns: repeat(7, 1fr); } }
-.event-grid-month { grid-template-columns: repeat(7, 1fr); }
+/* minmax(0, 1fr) — NOT plain 1fr (= minmax(auto, 1fr)), so a long nowrap event
+   title can't blow its column wide and overflow the grid. Lets cells stay equal
+   and the pill-title ellipsis actually engage. */
+.event-grid-week { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 768px) { .event-grid-week { grid-template-columns: repeat(7, minmax(0, 1fr)); } }
+.event-grid-month { grid-template-columns: repeat(7, minmax(0, 1fr)); }
 
 .event-grid-month-head { display: none; }
 @media (min-width: 768px) {
   .event-grid-month-head {
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     gap: 12px;
     margin-bottom: 12px;
   }
@@ -1646,6 +1649,7 @@ footer {
 }
 
 .event-day {
+  min-width: 0;   /* allow the cell (and its nowrap pill titles) to shrink/clip */
   border: 1px solid var(--event-border);
   background: var(--event-cell);
   border-radius: 12px;
