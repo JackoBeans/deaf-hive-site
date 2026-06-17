@@ -273,7 +273,9 @@
         <div class="airtable-filters" id="organisations-filters" aria-label="Filter organisations" hidden></div>
         <p class="airtable-count" id="organisations-count" hidden aria-live="polite"></p>
         <div class="airtable-grid" id="organisations-list">
+          <!--PRERENDER:orgs-->
           <p class="airtable-status">Loading organisations…</p>
+          <!--/PRERENDER:orgs-->
         </div>
       </section>
     </div>
@@ -293,6 +295,11 @@
 
       <!-- Status placeholder shown until JS replaces it (loading / not-configured / error). -->
       <p class="airtable-status" id="events-status" role="status" aria-live="polite">Loading events…</p>
+
+      <!-- Build-time prerender injects a <noscript> upcoming-events fallback here
+           (crawlers / no-JS); JS users get the interactive calendar below. -->
+      <!--PRERENDER:events-->
+      <!--/PRERENDER:events-->
 
       <!-- Whole interactive block — hidden until data has loaded successfully. -->
       <div class="event-block" id="event-block" hidden>

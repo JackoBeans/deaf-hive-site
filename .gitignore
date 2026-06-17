@@ -9,5 +9,8 @@ worker-v2/.bootstrap-users.sql
 # Wrangler local state (D1 / R2 sandbox)
 .wrangler/
 
+# Prerender build output (scripts/prerender.mjs → CI artifact; never committed)
+_site/
+
 # macOS clutter
 .DS_Store

@@ -1,0 +1,75 @@
+name: Build & deploy (prerender + Pages)
+
+# Builds the static site, prerenders the directory + events into crawlable HTML
+# (scripts/prerender.mjs), and deploys to GitHub Pages.
+#
+# Triggers:
+#   - push to main      → redeploy on content/code changes
+#   - daily schedule    → refresh the prerendered listings as the directory grows
+#   - manual dispatch    → rebuild on demand
+#
+# REQUIRES Pages source = "GitHub Actions" (Settings → Pages → Build and
+# deployment → Source). Until that's set, deploys happen from the branch and
+# this workflow's deploy step will fail harmlessly.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 5 * * *'   # 05:00 UTC daily
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Assemble published site into _site
+        # Copy the served site, excluding repo-only files (worker source, docs,
+        # build scripts, CI, markdown, dotfiles). _site is the deploy artifact.
+        run: |
+          mkdir -p _site
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.claude' \
+            --exclude='.gitignore' \
+            --exclude='worker' \
+            --exclude='worker-v2' \
+            --exclude='docs' \
+            --exclude='scripts' \
+            --exclude='_site' \
+            --exclude='*.md' \
+            ./ _site/
+
+      - name: Prerender directory + events (crawlable static HTML)
+        run: node scripts/prerender.mjs _site
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
