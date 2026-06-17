@@ -1,8 +1,15 @@
 # worker-v2 — DeafHive D1/R2 backend
 
-This is the new backend that will replace the Airtable-proxy Worker in
-`/worker`. It's being built in parallel — the live site keeps using the old
-Worker until cutover (Phase 6 in `docs/REBUILD_PLAN.md`).
+The DeafHive backend: a Cloudflare Worker (`directory-proxy-v2`) over Cloudflare
+**D1** (data) and **R2** (media). This is the live backend — it replaced the
+original Airtable-proxy Worker (`worker/`), which was **decommissioned in Phase 7
+(2026-06-17)**. Migration history is in `docs/REBUILD_PLAN.md` and
+`docs/CUTOVER.md`.
+
+> The "Phase 0 — first-time setup" steps below are the original scaffolding
+> instructions, kept as a from-scratch reference. The resources they create (D1
+> database `deafhive`, R2 bucket `deafhive-images`, secrets) already exist in
+> production.
 
 ## Layout
 
@@ -102,9 +109,10 @@ Local D1 and R2 are sandboxed under `.wrangler/state` — they don't touch the
 live data. Apply the schema to the local sandbox once with
 `wrangler d1 execute deafhive --local --file=worker-v2/schema.sql`.
 
-## Why a separate Worker?
+## History — why "v2"?
 
-The old `worker/` proxies Airtable and is still serving the live site. Cutover
-in Phase 6 swaps `WORKER_URL` in `app.js` from `directory-proxy` →
-`directory-proxy-v2` and keeps the old Worker around as a one-line rollback.
-See `docs/REBUILD_PLAN.md` → "Cutover plan" for the full procedure.
+This was built in parallel with the original Airtable-proxy Worker (`worker/`),
+which kept serving the live site until cutover. Cutover (Phase 6) swapped
+`WORKER_URL` in `app.js` from `directory-proxy` → `directory-proxy-v2`; the old
+Worker was held briefly as a one-line rollback, then deleted in Phase 7. See
+`docs/REBUILD_PLAN.md` → "Cutover plan" for the procedure that was followed.

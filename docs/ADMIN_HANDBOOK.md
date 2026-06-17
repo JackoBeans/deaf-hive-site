@@ -1,6 +1,15 @@
 # Admin handbook
 
-For people maintaining DeafHive content in Airtable. If you write code, you also want [`DATA_DICTIONARY.md`](DATA_DICTIONARY.md) and the root [`README.md`](../README.md).
+> ⚠️ **Out of date — pending rewrite.** This handbook describes the original
+> **Airtable** workflow. As of **Phase 7 (2026-06-17)** content is managed in the
+> **admin UI at <https://deafhive.online/admin>**, backed by Cloudflare D1/R2 — not
+> Airtable. What each field *means and where it surfaces* below is still broadly
+> accurate, but the "edit in Airtable → flip Status → purge automation" mechanics no
+> longer apply (you create/edit/approve records and upload media directly in the
+> admin UI, which purges the cache for you). See the root
+> [`README.md`](../README.md) → "Managing content" for the current flow.
+
+For people maintaining DeafHive content. If you write code, you also want [`DATA_DICTIONARY.md`](DATA_DICTIONARY.md) and the root [`README.md`](../README.md).
 
 ## How the site flows
 

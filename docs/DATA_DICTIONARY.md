@@ -1,6 +1,16 @@
-# Airtable data dictionary
+# Data dictionary
 
-How each field in the **DeafHive Database** Airtable base maps to the public site at <https://deafhive.online>. Field IDs are pinned in the Worker's `fields[]` allowlist (`worker/src/index.js`) and in `EVENTS_CONFIG` / `SECTIONS` in `app.js`.
+> ⚠️ **Backend changed — pending rewrite.** This dictionary was written against the
+> **Airtable** base. As of **Phase 7 (2026-06-17)** the data lives in **Cloudflare
+> D1** (tables `organisations`, `events`, `videos`), served by `worker-v2/`. The
+> *field → where-it-surfaces* mapping below is still accurate, but the Airtable
+> base/field IDs and the `filterByFormula` / `fields[]` allowlist mechanics are
+> historical (the old `worker/` is gone). The authoritative schema is now
+> [`worker-v2/schema.sql`](../worker-v2/schema.sql).
+
+How each content field maps to the public site at <https://deafhive.online>. The
+column definitions live in [`worker-v2/schema.sql`](../worker-v2/schema.sql); the
+client-side field mapping is in `EVENTS_CONFIG` / `SECTIONS` in `app.js`.
 
 **Base ID**: `app0JwQ5lgCrRJ00M`
 
