@@ -2175,11 +2175,23 @@ footer {
     padding: 0;               /* reset base nav padding: 12px 18px */
     padding-bottom: env(safe-area-inset-bottom, 0px);
     z-index: 950;
-    background: #ffffff;
+    /* Translucent so content is faintly visible scrolling behind. This opaque-ish
+       fallback keeps labels legible on browsers without backdrop-filter; the
+       @supports block below goes more transparent once a blur is available. */
+    background: rgba(255, 255, 255, 0.86);
     border: 0;                /* reset base nav border + border-radius (the pill) */
     border-top: 1px solid rgba(28, 45, 96, 0.12);
     border-radius: 0;
     box-shadow: 0 -4px 16px rgba(18, 34, 84, 0.10);
+  }
+  /* Frosted glass: more see-through, with a blur that keeps the tabs readable
+     over whatever scrolls underneath (iOS-style). -webkit- prefix for Safari. */
+  @supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+    .tabbar {
+      background: rgba(255, 255, 255, 0.72);
+      -webkit-backdrop-filter: saturate(160%) blur(16px);
+      backdrop-filter: saturate(160%) blur(16px);
+    }
   }
   .tabbar-tab {
     flex: 1;
