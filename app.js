@@ -2063,3 +2063,30 @@ function injectEventSchema(records) {
     window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
   });
 }());
+
+// ── Auto-hide the sticky nav on scroll-down, reveal on scroll-up ───────────
+// Reclaims screen space while reading; the nav reappears the moment you scroll
+// up, get near the top, focus into it (so keyboard focus is never trapped
+// off-screen), or open the mobile menu.
+(function autoHideNav() {
+  const nav = document.getElementById('site-nav');
+  if (!nav) return;
+  const REVEAL_AT = 80; // always shown within this many px of the top
+  let lastY = Math.max(0, window.scrollY);
+  let ticking = false;
+  const update = () => {
+    ticking = false;
+    const y = Math.max(0, window.scrollY);
+    if (nav.classList.contains('is-open') || nav.contains(document.activeElement) || y < REVEAL_AT) {
+      nav.classList.remove('nav--hidden');
+    } else if (y > lastY + 4) {        // scrolling down
+      nav.classList.add('nav--hidden');
+    } else if (y < lastY - 4) {        // scrolling up
+      nav.classList.remove('nav--hidden');
+    }
+    lastY = y;
+  };
+  window.addEventListener('scroll', () => {
+    if (!ticking) { ticking = true; requestAnimationFrame(update); }
+  }, { passive: true });
+}());

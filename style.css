@@ -125,7 +125,12 @@ nav {
   border: 1px solid rgba(28, 45, 96, 0.12);
   border-radius: 22px;
   box-shadow: 0 12px 32px rgba(18, 34, 84, 0.10);
+  transition: transform 0.3s ease;
 }
+/* Auto-hide on scroll-down (app.js toggles .nav--hidden); reveals on scroll-up.
+   The mobile menu being open forces it visible (handled in JS). */
+nav.nav--hidden { transform: translateY(-150%); }
+@media (prefers-reduced-motion: reduce) { nav { transition: none; } }
 
 .logo {
   font-size: 1.9rem;
