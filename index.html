@@ -9,6 +9,9 @@
        inline scripts or on*= handlers, and the JSON-LD blocks (static and
        app.js-injected) are non-executing data, exempt from script-src. -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://i.ytimg.com https://directory-proxy-v2.silent-term-d0e4.workers.dev; connect-src 'self' https://directory-proxy-v2.silent-term-d0e4.workers.dev; frame-src https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <!-- Keeps the referring URL out of cross-origin requests (works via meta;
+       frame-ancestors / a real Referrer-Policy header need Cloudflare — see docs). -->
+  <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DeafHive — a central online space for the Deaf community</title>
   <meta name="description" content="A central online space for the Deaf community, bringing together local events, BSL videos, services and support.">
