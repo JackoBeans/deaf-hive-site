@@ -2158,15 +2158,28 @@ footer {
   /* The tab bar is the nav on phones — hide the top bar entirely. */
   #site-nav { display: none; }
 
+  /* NOTE: .tabbar is a <nav>, so it inherits the floating top-nav "pill" rules
+     (sticky, top:14px, width:calc, margin:auto, padding, flex-wrap, gap, border,
+     border-radius). Every one of those is explicitly reset here — in particular
+     `top` MUST become auto, or a fixed element with both top and bottom set
+     stretches to full viewport height (the bug that shipped: a tall white bar). */
   .tabbar {
     display: flex;
+    flex-wrap: nowrap;        /* reset base nav flex-wrap: wrap */
+    gap: 0;                   /* reset base nav gap: 12px */
     position: fixed;
+    top: auto;                /* reset base nav top: 14px — else the bar fills the screen */
     left: 0; right: 0; bottom: 0;
+    width: auto;              /* reset base nav width:calc() so left/right span the viewport */
+    margin: 0;                /* reset base nav margin: 14px auto 0 */
+    padding: 0;               /* reset base nav padding: 12px 18px */
+    padding-bottom: env(safe-area-inset-bottom, 0px);
     z-index: 950;
     background: #ffffff;
+    border: 0;                /* reset base nav border + border-radius (the pill) */
     border-top: 1px solid rgba(28, 45, 96, 0.12);
+    border-radius: 0;
     box-shadow: 0 -4px 16px rgba(18, 34, 84, 0.10);
-    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   .tabbar-tab {
     flex: 1;
