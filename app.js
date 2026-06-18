@@ -2028,3 +2028,19 @@ function injectEventSchema(records) {
     itemListElement: items,
   });
 }
+
+// ── Back-to-top button ───────────────────────────────────────────────────
+// Shows once you've scrolled down ~a screenful; returns to the top on click
+// (honours prefers-reduced-motion). Mounted in index.html as #back-to-top.
+(function backToTop() {
+  const btn = document.getElementById('back-to-top');
+  if (!btn) return;
+  const THRESHOLD = 600;
+  const sync = () => btn.classList.toggle('is-visible', window.scrollY > THRESHOLD);
+  window.addEventListener('scroll', sync, { passive: true });
+  sync();
+  btn.addEventListener('click', () => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
+  });
+}());

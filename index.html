@@ -186,11 +186,11 @@
           </button>
         </div>
         <div class="col-text">
-          <ul class="bullet-list">
-            <li>A place to connect</li>
-            <li>A place to learn</li>
-            <li>A place to belong</li>
-          </ul>
+          <div class="find-grid find-grid--stacked">
+            <div class="find-item"><span><strong>A place to connect</strong></span></div>
+            <div class="find-item"><span><strong>A place to learn</strong></span></div>
+            <div class="find-item"><span><strong>A place to belong</strong></span></div>
+          </div>
         </div>
       </div>
     </div>
@@ -209,11 +209,11 @@
         </div>
         <div class="col-text">
           <p class="sec-sub mb-16">Having access is important, but feeling part of the deaf community matters too.</p>
-          <ul class="bullet-list">
-            <li>Many events have interpreters booked, but deaf people don't always attend because they did not know about the event.</li>
-            <li>Finding BSL-friendly services, courses, and community groups can be difficult and time-consuming.</li>
-            <li>Deaf role models and success stories are rarely visible — we want to change that.</li>
-          </ul>
+          <div class="find-grid find-grid--stacked">
+            <div class="find-item"><span>Many events have interpreters booked, but deaf people don't always attend because they did not know about the event.</span></div>
+            <div class="find-item"><span>Finding BSL-friendly services, courses, and community groups can be difficult and time-consuming.</span></div>
+            <div class="find-item"><span>Deaf role models and success stories are rarely visible — we want to change that.</span></div>
+          </div>
         </div>
       </div>
     </div>
@@ -559,6 +559,13 @@
     <p class="footer-tagline">Everything on DeafHive is built with YOU.</p>
     <p class="footer-meta">© 2026 DeafHive</p>
   </footer>
+
+  <!-- Back-to-top: hidden until you scroll down a screenful (app.js adds .is-visible). -->
+  <button id="back-to-top" type="button" class="back-to-top" aria-label="Back to top">
+    <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">
+      <path d="M6 14l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
 
   <script src="app.js" defer></script>
 </body>
