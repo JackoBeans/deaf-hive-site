@@ -349,6 +349,41 @@ function formatCount(n, section) {
 function buildFilters(filtersEl, filterFields, records, selected, onChange) {
   filtersEl.replaceChildren();
 
+  // Disclosure: on mobile (≤768px, CSS-gated) the chip rows collapse behind a
+  // "Filters" toggle so the directory is visible immediately; on desktop they
+  // stay fully visible. The search input lives outside filtersEl, so it's always
+  // shown. When collapsed, active selections appear as removable chips.
+  const panelId = (filtersEl.id || 'filters') + '-panel';
+
+  const toggle = document.createElement('button');
+  toggle.type = 'button';
+  toggle.className = 'filters-toggle';
+  toggle.setAttribute('aria-expanded', 'false');
+  toggle.setAttribute('aria-controls', panelId);
+  const toggleText = document.createElement('span');
+  toggleText.textContent = 'Filters';
+  const badge = document.createElement('span');
+  badge.className = 'filters-toggle-badge';
+  badge.hidden = true;
+  const chevron = document.createElement('span');
+  chevron.className = 'filters-toggle-chevron';
+  chevron.setAttribute('aria-hidden', 'true');
+  chevron.textContent = '▾';
+  toggle.append(toggleText, badge, chevron);
+
+  const active = document.createElement('div');
+  active.className = 'filters-active';
+  active.setAttribute('role', 'group');
+  active.setAttribute('aria-label', 'Active filters');
+
+  const panel = document.createElement('div');
+  panel.className = 'filters-panel';
+  panel.id = panelId;
+
+  // fieldId\0value -> main chip element, so removing an active chip syncs it.
+  const chipEls = new Map();
+  const keyOf = (fieldId, value) => `${fieldId} ${value}`;
+
   filterFields.forEach(field => {
     const values = uniqueValues(records, field.id);
     if (values.length === 0) return;
@@ -371,20 +406,59 @@ function buildFilters(filtersEl, filterFields, records, selected, onChange) {
       chip.setAttribute('aria-pressed', 'false');
       chip.addEventListener('click', () => {
         const set = selected.get(field.id);
-        if (set.has(value)) {
-          set.delete(value);
-          chip.setAttribute('aria-pressed', 'false');
-        } else {
-          set.add(value);
-          chip.setAttribute('aria-pressed', 'true');
-        }
+        const turnOn = !set.has(value);
+        if (turnOn) set.add(value); else set.delete(value);
+        chip.setAttribute('aria-pressed', String(turnOn));
         onChange();
+        updateSummary();
       });
+      chipEls.set(keyOf(field.id, value), chip);
       row.appendChild(chip);
     });
 
-    filtersEl.appendChild(row);
+    panel.appendChild(row);
   });
+
+  function clearOne(fieldId, value) {
+    selected.get(fieldId).delete(value);
+    const chip = chipEls.get(keyOf(fieldId, value));
+    if (chip) chip.setAttribute('aria-pressed', 'false');
+    onChange();
+    updateSummary();
+  }
+
+  // Rebuild the removable active-chip row + the toggle badge count.
+  function updateSummary() {
+    active.replaceChildren();
+    let count = 0;
+    filterFields.forEach(field => {
+      selected.get(field.id).forEach(value => {
+        count += 1;
+        const tag = document.createElement('button');
+        tag.type = 'button';
+        tag.className = 'filters-active-chip';
+        tag.setAttribute('aria-label', `Remove filter ${field.label}: ${value}`);
+        tag.appendChild(document.createTextNode(value));
+        const x = document.createElement('span');
+        x.className = 'filters-active-x';
+        x.setAttribute('aria-hidden', 'true');
+        x.textContent = '×';
+        tag.appendChild(x);
+        tag.addEventListener('click', () => clearOne(field.id, value));
+        active.appendChild(tag);
+      });
+    });
+    badge.textContent = String(count);
+    badge.hidden = count === 0;
+  }
+
+  toggle.addEventListener('click', () => {
+    const open = filtersEl.classList.toggle('is-open');
+    toggle.setAttribute('aria-expanded', String(open));
+  });
+
+  filtersEl.append(toggle, active, panel);
+  updateSummary();
 }
 
 /** Render the card grid. Empty list → status message instead. */

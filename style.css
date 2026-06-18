@@ -906,6 +906,81 @@ footer {
   border-color: var(--navy);
 }
 
+/* ── Filters disclosure ──
+   Desktop: chip rows always visible (the toggle + active-chip row are hidden).
+   Mobile (≤768px): chip rows collapse behind the "Filters" toggle; active
+   selections show as removable chips so they stay glanceable while collapsed. */
+.filters-toggle { display: none; }   /* desktop: no toggle */
+.filters-active { display: none; }   /* desktop: chips show pressed state in the panel */
+.filters-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.filters-active-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 13px;
+  border: 1.5px solid var(--navy);
+  border-radius: 999px;
+  background: var(--navy);
+  color: var(--white);
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: 600;
+  cursor: pointer;
+  min-height: 34px;
+}
+.filters-active-chip:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+.filters-active-x { font-size: 1.15em; line-height: 1; }
+
+@media (max-width: 768px) {
+  .filters-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    align-self: flex-start;
+    min-height: 44px;
+    padding: 8px 16px;
+    border: 1.5px solid rgba(28, 45, 96, 0.55);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.78);
+    color: var(--text);
+    font: inherit;
+    font-size: var(--text-sm);
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .filters-toggle:hover { border-color: rgba(28, 45, 96, 0.78); }
+  .filters-toggle:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+  .filters-toggle-badge {
+    display: inline-grid;
+    place-items: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: var(--navy);
+    color: var(--white);
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+  .filters-toggle-chevron { font-size: 0.7em; transition: transform 0.15s; }
+  .filters-toggle[aria-expanded="true"] .filters-toggle-chevron { transform: rotate(180deg); }
+
+  /* Collapsed by default; .is-open (on #organisations-filters) expands it. */
+  .airtable-filters .filters-panel { display: none; }
+  .airtable-filters.is-open .filters-panel { display: flex; }
+
+  /* Active chips: visible while collapsed, hidden once the panel is expanded
+     (the panel's own chips show the pressed state then). :empty = no filters. */
+  .filters-active { display: flex; flex-wrap: wrap; gap: 8px; }
+  .filters-active:empty { display: none; }
+  .airtable-filters.is-open .filters-active { display: none; }
+}
+
 /* ── Result count ── */
 .airtable-count {
   font-size: var(--text-sm);
