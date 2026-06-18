@@ -1767,12 +1767,27 @@ footer {
 .event-day-count {
   display: inline-flex;
   align-items: center;
+  appearance: none;
+  -webkit-appearance: none;
   padding: 2px 8px;
-  background: var(--white);
+  border: 0;
   border-radius: 999px;
+  background: var(--event-pill);
+  font-family: inherit;
   font-size: 0.7rem;
   font-weight: 700;
   color: var(--text);
+  cursor: pointer;
+}
+.event-day-count:hover { background: var(--event-pill-hover); }
+.event-day-count:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+/* Whole-cell tap opens a day's events on phones (where the pills are hidden). */
+@media (max-width: 767px) {
+  .event-day--tappable { cursor: pointer; }
+  .event-day--tappable:active { background: var(--event-pill); }
 }
 
 .event-day-items { display: flex; flex-direction: column; gap: 4px; }

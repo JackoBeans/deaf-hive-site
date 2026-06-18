@@ -1599,9 +1599,15 @@ function buildDayCell(day, dayEvents, weekLabel, today, fields, onOpen, onOpenDa
     num.textContent = String(day.getDate());
     head.appendChild(num);
     if (dayEvents.length > 0) {
-      const count = document.createElement('span');
+      // A button (not a span) so keyboard / screen-reader users can open the
+      // day's events — important on phones, where the pills below are hidden.
+      const count = document.createElement('button');
+      count.type = 'button';
       count.className = 'event-day-count';
       count.textContent = String(dayEvents.length);
+      const dl = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(day);
+      count.setAttribute('aria-label', `${dayEvents.length} event${dayEvents.length > 1 ? 's' : ''} on ${dl} — view`);
+      count.addEventListener('click', (e) => { e.stopPropagation(); onOpenDay(day, dayEvents); });
       head.appendChild(count);
     }
   }
@@ -1635,6 +1641,19 @@ function buildDayCell(day, dayEvents, weekLabel, today, fields, onOpen, onOpenDa
   }
 
   cell.appendChild(items);
+
+  // Month view on phones: the pills are hidden, so a tap anywhere on a day that
+  // has events opens that day's list (the count badge does the same for
+  // keyboard). Ignore taps that land on the pills / badge (they have their own
+  // handlers), and only act at phone widths where the pills aren't shown.
+  if (!weekLabel && dayEvents.length > 0) {
+    cell.classList.add('event-day--tappable');
+    cell.addEventListener('click', (e) => {
+      if (e.target.closest('.event-pill, .event-pill-more, .event-day-count')) return;
+      if (window.matchMedia('(max-width: 767px)').matches) onOpenDay(day, dayEvents);
+    });
+  }
+
   return cell;
 }
 
