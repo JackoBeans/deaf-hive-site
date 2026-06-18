@@ -8,7 +8,7 @@
        worker API / R2 media. script-src 'self' is safe here: there are no
        inline scripts or on*= handlers, and the JSON-LD blocks (static and
        app.js-injected) are non-executing data, exempt from script-src. -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://i.ytimg.com https://directory-proxy-v2.silent-term-d0e4.workers.dev; connect-src 'self' https://directory-proxy-v2.silent-term-d0e4.workers.dev; frame-src https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://i.ytimg.com https://directory-proxy-v2.silent-term-d0e4.workers.dev; connect-src 'self' https://directory-proxy-v2.silent-term-d0e4.workers.dev; frame-src https://www.youtube-nocookie.com; object-src 'none'; base-uri 'self'; form-action 'self'">
   <!-- Keeps the referring URL out of cross-origin requests (works via meta;
        frame-ancestors / a real Referrer-Policy header need Cloudflare — see docs). -->
   <meta name="referrer" content="strict-origin-when-cross-origin">
@@ -69,20 +69,14 @@
   ]
   </script>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://i.ytimg.com">
   <link rel="preconnect" href="https://www.youtube-nocookie.com">
 
-  <!-- Load Raleway asynchronously to avoid blocking first paint.
-       The `media="print"` trick keeps the request non-render-blocking; an
-       early initialiser in app.js promotes it to `media="all"` once loaded.
-       The swap is in JS (not an inline `onload=` attribute) so it works
-       under a strict Content-Security-Policy that disallows inline event
-       handlers. <noscript> restores synchronous load for users without JS. -->
-  <link rel="preload" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800;900&amp;display=swap" as="style" crossorigin>
-  <link id="raleway-css" rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800;900&amp;display=swap" media="print" crossorigin>
-  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700;800;900&amp;display=swap" crossorigin></noscript>
+  <!-- Raleway is self-hosted (see fonts.css) — no third-party font request, so
+       the CSP keeps style-src/font-src at 'self'. Preload the latin body weight
+       for fast first paint; font-display: swap handles the brief fallback. -->
+  <link rel="preload" href="/fonts/raleway-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/fonts.css">
 
   <link rel="stylesheet" href="style.css">
 </head>

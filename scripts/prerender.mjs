@@ -85,7 +85,7 @@ function shell({ path, title, description, bodyClass, main, jsonld }) {
 <html lang="en-GB">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: ${WORKER}; connect-src 'self' ${WORKER}; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: ${WORKER}; connect-src 'self' ${WORKER}; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'self'">
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${esc(title)}</title>
@@ -96,9 +96,8 @@ function shell({ path, title, description, bodyClass, main, jsonld }) {
   <meta property="og:description" content="${esc(description)}">
   <meta property="og:url" content="${esc(canonical)}">
   <meta property="og:image" content="${SITE}/og.png">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;600;700&amp;display=swap">
+  <link rel="preload" href="/fonts/raleway-latin.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="/fonts.css">
   <style>
     :root { --navy:#1a2f6e; --paper:#f4f4f0; --ink:#1a2f6e; --muted:#4a4a4a; --line:rgba(28,45,96,0.14); }
     * { box-sizing: border-box; }

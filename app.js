@@ -10,22 +10,9 @@
  * The Worker URL must be filled in below before the page can load data.
  */
 
-// ════════════════════════════════════════════════════════════════════════
-// FONT MEDIA SWAP (runs first — promotes the print-only Raleway stylesheet
-// to all-media once it has loaded). Lives in external JS so it works under
-// a strict CSP without 'unsafe-inline' in script-src.
-// ════════════════════════════════════════════════════════════════════════
-
-(function promoteRalewayStylesheet() {
-  const link = document.getElementById('raleway-css');
-  if (!link) return;
-  // .sheet is non-null once the stylesheet's rules are loaded and applied.
-  if (link.sheet) {
-    link.media = 'all';
-  } else {
-    link.addEventListener('load', () => { link.media = 'all'; }, { once: true });
-  }
-}());
+// Raleway is now self-hosted (see /fonts.css) with font-display: swap, so the
+// old async font-swap shim that promoted a print-only Google Fonts <link> is
+// no longer needed.
 
 // ════════════════════════════════════════════════════════════════════════
 // CONFIGURATION
