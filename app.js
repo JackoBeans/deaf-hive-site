@@ -2090,3 +2090,32 @@ function injectEventSchema(records) {
     if (!ticking) { ticking = true; requestAnimationFrame(update); }
   }, { passive: true });
 }());
+
+// ── Mobile bottom tab bar: highlight the section currently in view ─────────
+// Each .tabbar-tab[data-spy] points at a page section. The active tab is the
+// last section whose top has scrolled above an activation line near the top of
+// the viewport — robust for short and tall sections alike. (No-op on desktop,
+// where the tab bar is hidden.)
+(function tabbarSpy() {
+  const tabs = [...document.querySelectorAll('.tabbar-tab[data-spy]')];
+  if (!tabs.length) return;
+  const entries = tabs
+    .map((tab) => ({ tab, sec: document.querySelector(tab.getAttribute('data-spy')) }))
+    .filter((e) => e.sec);
+  if (!entries.length) return;
+  const setActive = (tab) => tabs.forEach((t) => {
+    const on = t === tab;
+    t.classList.toggle('is-active', on);
+    if (on) t.setAttribute('aria-current', 'page'); else t.removeAttribute('aria-current');
+  });
+  const update = () => {
+    const line = window.innerHeight * 0.28; // activation line near the top
+    let active = entries[0];
+    for (const e of entries) {
+      if (e.sec.getBoundingClientRect().top <= line) active = e; else break;
+    }
+    setActive(active.tab);
+  };
+  window.addEventListener('scroll', update, { passive: true });
+  update();
+}());

@@ -2149,3 +2149,51 @@ footer {
   .back-to-top { transition: opacity 0.2s ease, visibility 0.2s ease; transform: none; }
   .back-to-top.is-visible { transform: none; }
 }
+
+/* ── Mobile bottom tab bar ───────────────────────────────────────────────
+   Shown only on phones (≤768px), where it REPLACES the top nav. The four tabs
+   scroll to the page sections; app.js sets .is-active (scroll-spy). */
+.tabbar { display: none; }
+@media (max-width: 768px) {
+  /* The tab bar is the nav on phones — hide the top bar entirely. */
+  #site-nav { display: none; }
+
+  .tabbar {
+    display: flex;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 950;
+    background: #ffffff;
+    border-top: 1px solid rgba(28, 45, 96, 0.12);
+    box-shadow: 0 -4px 16px rgba(18, 34, 84, 0.10);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .tabbar-tab {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    min-height: 56px;
+    padding: 7px 2px;
+    text-decoration: none;
+    color: #64708f;
+    font-size: 0.66rem;
+    font-weight: 600;
+    line-height: 1.1;
+    text-align: center;
+  }
+  .tabbar-icon { width: 23px; height: 23px; flex-shrink: 0; }
+  .tabbar-tab.is-active { color: var(--text); }
+  .tabbar-tab:focus-visible {
+    outline: var(--focus-ring-width) solid var(--focus-ring-color);
+    outline-offset: -3px;
+    border-radius: 12px;
+  }
+
+  /* Keep the last content (and footer) clear of the fixed bar + home indicator. */
+  body { padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px)); }
+  /* Lift the back-to-top button above the tab bar. */
+  .back-to-top { bottom: calc(58px + 16px + env(safe-area-inset-bottom, 0px)); }
+}
