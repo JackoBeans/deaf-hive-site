@@ -10,40 +10,15 @@
    `hidden` is semantic: when set, the element should be invisible, period. */
 [hidden] { display: none !important; }
 
+/* Brand palette, the focus ring and the type scale now live in /tokens.css
+   (linked before this file), so they're declared once for the whole site.
+   Only homepage-specific tokens remain here. */
 :root {
-  --navy:     #2852b7;
-  --navy-dk:  #1f46aa;
   --blue-mid: #3f66c4;
   --hex-line: rgba(123, 153, 224, 0.34);
-  --yellow:   #f5c842;
-  --yellow-dk:#d4a800;
   --white:    #ffffff;
   --text:     #1a2f6e;
   --body:     #333;
-
-  /* Typography scale. Buckets the ~14 distinct rem sizes that previously
-     repeated across the file into 8 named steps. Deliberately responsive
-     ramps (hero, event-modal-detail title) and component-specific tiny
-     calendar pixel sizes are kept as inline values — they shouldn't be
-     dragged onto a shared scale. Mirrored in /submit/submit.css so the
-     form pages render the same scale. */
-  --text-xs:   0.82rem;
-  --text-sm:   0.88rem;
-  --text-md:   0.95rem;
-  --text-base: 1rem;
-  --text-lg:   1.2rem;
-  --text-xl:   1.5rem;
-  --text-2xl:  1.8rem;
-  --text-3xl:  2.8rem;
-
-  /* Focus ring. Yellow alone fails WCAG 1.4.11 on white (1.59:1), so on
-     light surfaces the ring is two-layer: a navy halo fills the offset
-     gap, giving ≥3:1 against any background the yellow fails on.
-     (Yellow alone is fine on navy surfaces — 4.4:1.) Mirrored in
-     /submit/submit.css. */
-  --focus-ring-width: 3px;
-  --focus-ring-color: var(--yellow);
-  --focus-ring-halo:  0 0 0 2px var(--navy);
 }
 
 body {

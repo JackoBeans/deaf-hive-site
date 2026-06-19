@@ -4,18 +4,15 @@
    Self-contained: reuses the DeafHive brand tokens but doesn't depend on
    style.css, so these pages stay lightweight.
    ────────────────────────────────────────────────────────────────────────── */
+/* Brand palette + focus ring come from /tokens.css (linked before this file).
+   Only the legal-page surface/text tokens live here. */
 :root {
-  --navy: #2852b7;
-  --navy-dk: #1f46aa;
-  --yellow: #f5c842;
   --text: #1a2f6e;
   --ink: #243049;
   --muted: #566184;
   --line: rgba(28, 45, 96, 0.14);
   --bg: #f4f7ff;
   --card: #ffffff;
-  --focus-ring-width: 3px;
-  --focus-ring-color: var(--yellow);
 }
 
 * { box-sizing: border-box; }
@@ -151,6 +148,9 @@ a:focus-visible,
 :focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: 2px;
+  /* Navy halo fills the offset gap so the ring keeps ≥3:1 on white
+     (yellow alone is 1.59:1 — fails WCAG 1.4.11). Matches the main site. */
+  box-shadow: var(--focus-ring-halo);
   border-radius: 4px;
 }
 

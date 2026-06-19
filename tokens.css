@@ -1,0 +1,39 @@
+/* ════════════════════════════════════════════════════════════════════════
+   tokens.css — shared design tokens for the whole DeafHive site.
+
+   Single source of truth for the brand palette, the focus ring and the type
+   scale. Linked (before the page's own stylesheet) by every page, so these no
+   longer have to be hand-copied into style.css, submit.css and legal.css.
+
+   Page-specific tokens (body-text colour, surfaces, form colours) stay in each
+   page's own stylesheet — e.g. --text is navy on the homepage but near-black on
+   the submit forms, so it is deliberately NOT shared here.
+   ════════════════════════════════════════════════════════════════════════ */
+:root {
+  /* Brand palette */
+  --navy:      #2852b7;
+  --navy-dk:   #1f46aa;
+  --yellow:    #f5c842;
+  --yellow-dk: #d4a800;
+
+  /* Focus ring. Yellow alone fails WCAG 1.4.11 on white (1.59:1), so on light
+     surfaces the ring is two-layer: a navy halo fills the outline-offset gap,
+     giving ≥3:1 against any background the yellow fails on. (Yellow alone is
+     fine on navy surfaces — 4.4:1.) */
+  --focus-ring-width: 3px;
+  --focus-ring-color: var(--yellow);
+  --focus-ring-halo:  0 0 0 2px var(--navy);
+
+  /* Typography scale. Buckets the distinct rem sizes that previously repeated
+     into 8 named steps. Deliberately responsive ramps (hero, event-modal-detail
+     title) and component-specific tiny calendar pixel sizes are kept as inline
+     values in the page CSS — they shouldn't be dragged onto a shared scale. */
+  --text-xs:   0.82rem;
+  --text-sm:   0.88rem;
+  --text-md:   0.95rem;
+  --text-base: 1rem;
+  --text-lg:   1.2rem;
+  --text-xl:   1.5rem;
+  --text-2xl:  1.8rem;
+  --text-3xl:  2.8rem;
+}

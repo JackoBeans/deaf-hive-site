@@ -4,6 +4,8 @@
    which <fieldset>s appear.
    ════════════════════════════════════════════════════════════════════════ */
 
+/* Brand palette, focus ring and type scale come from /tokens.css (linked
+   before this file). Only submit-form-specific tokens live here. */
 :root {
   --bg:          #ffffff;
   --bg-elevated: #f7f8fa;
@@ -13,32 +15,8 @@
   /* 3.1:1 on white — an empty text input's only visible boundary is its
      border, so it must meet WCAG 1.4.11 (the old #c9ced6 was 1.58:1). */
   --border-strong: #8a93a2;
-  /* Brand tokens — kept in sync with /style.css so the submit pages share
-     the main site's navy/yellow palette and focus ring. If you change a
-     value on the main site, mirror it here. */
-  --navy:        #2852b7;
-  --navy-dk:     #1f46aa;
-  --yellow:      #f5c842;
-  --yellow-dk:   #d4a800;
   --accent:      var(--navy);
   --accent-hover:var(--navy-dk);
-  --focus-ring-color: var(--yellow);
-  --focus-ring-width: 3px;
-  /* Navy halo fills the outline-offset gap — yellow alone is 1.59:1 on
-     white (fails WCAG 1.4.11); the two-layer ring passes everywhere.
-     Mirrored from /style.css. */
-  --focus-ring-halo:  0 0 0 2px var(--navy);
-  /* Typography scale — mirrored from /style.css. Submit pages don't load
-     the main stylesheet so the tokens have to be redeclared here. Keep
-     these values in sync. */
-  --text-xs:   0.82rem;
-  --text-sm:   0.88rem;
-  --text-md:   0.95rem;
-  --text-base: 1rem;
-  --text-lg:   1.2rem;
-  --text-xl:   1.5rem;
-  --text-2xl:  1.8rem;
-  --text-3xl:  2.8rem;
   --ok-bg:       #e1f5e6;
   --ok-fg:       #1f6f37;
   --err-bg:      #fbe1e3;
