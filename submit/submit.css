@@ -322,6 +322,14 @@ fieldset.field > legend {
 }
 .btn:disabled { opacity: 0.55; cursor: progress; }
 
+/* Point-of-collection privacy line, shown just above the submit button. */
+.form-privacy {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+  line-height: 1.5;
+  margin: 0 0 1rem 0;
+}
+
 /* ── Status banners ────────────────────────────────────────────────── */
 
 .banner {

@@ -1,0 +1,159 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   legal.css — shared styles for the long-form policy pages
+   (privacy.html, terms.html, accessibility.html).
+   Self-contained: reuses the DeafHive brand tokens but doesn't depend on
+   style.css, so these pages stay lightweight.
+   ────────────────────────────────────────────────────────────────────────── */
+:root {
+  --navy: #2852b7;
+  --navy-dk: #1f46aa;
+  --yellow: #f5c842;
+  --text: #1a2f6e;
+  --ink: #243049;
+  --muted: #566184;
+  --line: rgba(28, 45, 96, 0.14);
+  --bg: #f4f7ff;
+  --card: #ffffff;
+  --focus-ring-width: 3px;
+  --focus-ring-color: var(--yellow);
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  margin: 0;
+  font-family: "Raleway", -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.6;
+}
+
+/* Skip link (same pattern as the rest of the site). */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: var(--text);
+  color: #fff;
+  padding: 10px 16px;
+  border-radius: 0 0 10px 0;
+  z-index: 100;
+}
+.skip-link:focus { left: 0; }
+
+.page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 28px 20px 64px;
+}
+
+.page-header { margin-bottom: 24px; }
+
+.page-title {
+  font-size: clamp(1.7rem, 5vw, 2.3rem);
+  line-height: 1.15;
+  color: var(--text);
+  margin: 0 0 8px;
+}
+.page-lede {
+  font-size: 1.05rem;
+  color: var(--muted);
+  margin: 0 0 16px;
+}
+.page-updated {
+  font-size: 0.9rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* Cross-navigation between the three policy pages. */
+.legal-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0 0;
+}
+.legal-nav a {
+  display: inline-block;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.legal-nav a:hover { border-color: var(--navy); }
+.legal-nav a[aria-current="page"] {
+  background: var(--navy);
+  border-color: var(--navy);
+  color: #fff;
+}
+
+.legal-content {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: clamp(20px, 4vw, 36px);
+}
+
+.legal-content h2 {
+  font-size: 1.25rem;
+  color: var(--text);
+  margin: 32px 0 10px;
+  padding-top: 6px;
+}
+.legal-content h2:first-child { margin-top: 0; }
+.legal-content h3 {
+  font-size: 1.05rem;
+  color: var(--text);
+  margin: 22px 0 8px;
+}
+.legal-content p { margin: 0 0 14px; }
+.legal-content ul { margin: 0 0 16px; padding-left: 22px; }
+.legal-content li { margin: 0 0 7px; }
+.legal-content a { color: var(--navy-dk); }
+.legal-content a:hover { color: var(--navy); }
+.legal-content strong { color: var(--ink); }
+
+.legal-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 18px;
+  font-size: 0.96rem;
+}
+.legal-content th,
+.legal-content td {
+  text-align: left;
+  vertical-align: top;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+}
+.legal-content th { background: #eef3ff; color: var(--text); }
+
+/* Site identity / legal footer (Companies Act disclosure lives here). */
+.legal-footer {
+  margin-top: 36px;
+  padding-top: 20px;
+  border-top: 1px solid var(--line);
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.legal-footer p { margin: 0 0 6px; }
+.legal-footer nav { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 14px; }
+.legal-footer a { color: var(--navy-dk); font-weight: 600; }
+
+/* Visible keyboard focus everywhere. */
+a:focus-visible,
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto; }
+}

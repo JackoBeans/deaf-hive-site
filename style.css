@@ -745,6 +745,34 @@ footer {
   margin-bottom: 12px;
 }
 
+/* Legal/policy links + Companies Act identity line in the footer. */
+.footer-legal {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px 18px;
+  margin-bottom: 12px;
+}
+.footer-legal a {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-decoration: none;
+}
+.footer-legal a:hover { color: var(--white); text-decoration: underline; }
+.footer-legal a:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.footer-identity {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+  max-width: 620px;
+  margin: 0 auto 10px;
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 768px) {
   nav {
