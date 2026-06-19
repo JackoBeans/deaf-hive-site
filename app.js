@@ -245,6 +245,16 @@ const orgModalAPI = setupOrgModal();
  * If the section's `fields.title` is null we treat the section as
  * not-yet-configured and show a friendly placeholder.
  */
+// Fetch a Worker endpoint and return its records array (or throw on a non-OK
+// response / network error). The organisations and events blocks share this
+// fetch+parse shell; each caller keeps its own error UI and post-processing.
+async function fetchWorkerRecords(endpoint) {
+  const res = await fetch(WORKER_URL + endpoint, { method: 'GET' });
+  if (!res.ok) throw new Error('Worker returned status ' + res.status);
+  const data = await res.json();
+  return Array.isArray(data.records) ? data.records : [];
+}
+
 async function initSection(section, onCardClick) {
   const listEl = section.listElId ? document.getElementById(section.listElId) : null;
   if (!listEl) return;
@@ -265,10 +275,7 @@ async function initSection(section, onCardClick) {
 
   let records;
   try {
-    const res = await fetch(WORKER_URL + section.endpoint, { method: 'GET' });
-    if (!res.ok) throw new Error(`Worker returned status ${res.status}`);
-    const data = await res.json();
-    records = Array.isArray(data.records) ? data.records : [];
+    records = await fetchWorkerRecords(section.endpoint);
   } catch (err) {
     setStatus(listEl, 'Could not load — please try again later.', true);
     console.error('[' + section.endpoint + '] fetch failed:', err);
@@ -1008,13 +1015,8 @@ const EVENT_WEEKDAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   }
 
   // Fetch + initial render.
-  fetch(WORKER_URL + EVENTS_CONFIG.endpoint, { method: 'GET' })
-    .then(res => {
-      if (!res.ok) throw new Error('Worker returned status ' + res.status);
-      return res.json();
-    })
-    .then(data => {
-      const records = Array.isArray(data.records) ? data.records : [];
+  fetchWorkerRecords(EVENTS_CONFIG.endpoint)
+    .then(records => {
       state.records = records
         .map(r => ({ ...r, eventDate: parseEventDate(r.fields && r.fields[f.date]) }))
         .filter(r => r.eventDate)
