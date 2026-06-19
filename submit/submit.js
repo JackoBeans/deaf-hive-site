@@ -93,18 +93,16 @@
 
   // ── Banners ─────────────────────────────────────────────────────────
 
-  function showOk(message) {
-    $bannerOk.textContent = message;
-    $bannerOk.hidden = false;
-    $bannerErr.hidden = true;
+  // showOk / showErr both reveal one banner, hide the other, and scroll to the
+  // top — only which banner differs. One helper, two thin wrappers.
+  function showMessage(kind, message) {
+    $bannerOk.hidden = kind !== 'ok';
+    $bannerErr.hidden = kind !== 'err';
+    (kind === 'ok' ? $bannerOk : $bannerErr).textContent = message;
     window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   }
-  function showErr(message) {
-    $bannerErr.textContent = message;
-    $bannerErr.hidden = false;
-    $bannerOk.hidden = true;
-    window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
-  }
+  function showOk(message)  { showMessage('ok', message); }
+  function showErr(message) { showMessage('err', message); }
 
   /** Flag a required field as invalid: red border (via aria-invalid),
    *  a per-field error message tied to the input via aria-describedby

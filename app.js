@@ -1434,13 +1434,7 @@ function makeActivePill(text, ariaLabel, onRemove, isOrg) {
   btn.type = 'button';
   btn.setAttribute('aria-label', ariaLabel);
   btn.addEventListener('click', onRemove);
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.classList.add('icon');
-  svg.setAttribute('aria-hidden', 'true');
-  const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-  use.setAttribute('href', '#icon-x');
-  svg.appendChild(use);
-  btn.appendChild(svg);
+  btn.appendChild(svgIcon('icon-x'));
   span.appendChild(btn);
   return span;
 }
