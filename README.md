@@ -118,8 +118,14 @@ in `worker-v2/wrangler.toml`.
 deafhive-site/
 ├── README.md            ← this file
 ├── CNAME                ← deafhive.online (GitHub Pages custom domain)
-├── robots.txt · sitemap.xml
-├── index.html · style.css · app.js     ← public directory / calendar / videos
+├── robots.txt · sitemap.xml · favicon.svg
+├── tokens.css           ← shared CSS custom properties (colours, focus ring, type scale)
+├── fonts.css            ← self-hosted Raleway @font-face declarations (SIL OFL 1.1)
+├── fonts/               ← vendored Raleway .woff2 files
+├── index.html           ← homepage: directory / calendar / videos
+├── style.css · app.js   ← homepage styles and client-side JS
+├── legal.css            ← shared styles for legal pages
+├── privacy.html · terms.html · accessibility.html  ← UK GDPR / legal pages
 ├── admin/               ← staff moderation UI (HTML/CSS/JS)
 ├── submit/              ← public submission forms (org / event / video)
 ├── scripts/             ← build tooling (prerender.mjs — SEO prerender)
@@ -131,8 +137,9 @@ deafhive-site/
 └── docs/
     ├── ADMIN_HANDBOOK.md    ← editor / moderation guide
     ├── DATA_DICTIONARY.md   ← field-by-field data map
+    ├── SECURITY_HEADERS.md  ← Cloudflare runbook for adding HTTP security headers
     ├── REBUILD_PLAN.md      ← Airtable → D1/R2 migration plan (historical)
-    └── CUTOVER.md           ← cutover runbook (historical)
+    └── CUTOVER.md           ← cutover runbook (historical — done 2026-06-19)
 ```
 
 ## Free-tier ceilings to watch

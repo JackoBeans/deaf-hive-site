@@ -4,8 +4,8 @@
  * Two parts:
  *   1. Page chrome — nav toggle, smooth-scroll links, video modal.
  *      Carried over (unchanged in behaviour) from the original page.
- *   2. Airtable rendering — fetches the Worker's /organisations and /events
- *      endpoints, builds chip-pill filter rows, renders card grids.
+ *   2. Directory rendering — fetches the Worker's /organisations, /events, and
+ *      /videos endpoints, builds chip-pill filter rows, renders card grids.
  *
  * The Worker URL must be filled in below before the page can load data.
  */

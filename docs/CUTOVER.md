@@ -1,5 +1,12 @@
 # Cutover runbook — Airtable → D1/R2
 
+> **✅ DONE — Phase 6 cutover completed 2026-06-19.**
+> Phase 7 (decommission) also complete (2026-06-17): Airtable PAT revoked, old
+> `worker/` deleted, Airtable downgraded to free plan. This document is retained
+> as a historical record only.
+
+---
+
 Self-contained step-by-step for flipping the live `deafhive.online` site
 from the Airtable-backed Worker (`worker/`) to the D1/R2-backed Worker
 (`worker-v2/`).
@@ -211,9 +218,9 @@ GitHub Pages republishes in ~30–60 s. Site is back on the Airtable
 Worker. The new Worker stays deployed and ready for a retry once
 you've diagnosed the issue.
 
-The OLD `worker/` is still running (we never decommissioned it). Its
-URL is `https://directory-proxy.silent-term-d0e4.workers.dev`.
-Airtable still has all the data.
+The OLD `worker/` has been decommissioned (Phase 7, 2026-06-17):
+Airtable PAT revoked, `directory-proxy` Worker deleted, Airtable
+downgraded to free plan. There is no rollback to Airtable.
 
 ---
 
