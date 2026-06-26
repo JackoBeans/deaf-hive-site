@@ -14,7 +14,7 @@
   <meta name="referrer" content="strict-origin-when-cross-origin">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>DeafHive — a central online space for the Deaf community</title>
-  <meta name="description" content="A central online space for the Deaf community, bringing together local events, BSL videos, services and support.">
+  <meta name="description" content="A central online space for the Deaf community across the UK — bringing together local BSL events, sign-language videos, services and support all in one place.">
   <meta name="theme-color" content="#2852b7" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#1f46aa" media="(prefers-color-scheme: dark)">
   <link rel="canonical" href="https://deafhive.online/">
@@ -23,7 +23,7 @@
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="DeafHive">
   <meta property="og:title" content="DeafHive — a central online space for the Deaf community">
-  <meta property="og:description" content="A central online space for the Deaf community, bringing together local events, BSL videos, services and support.">
+  <meta property="og:description" content="A central online space for the Deaf community across the UK — bringing together local BSL events, sign-language videos, services and support all in one place.">
   <meta property="og:url" content="https://deafhive.online/">
   <meta property="og:locale" content="en_GB">
   <meta property="og:image" content="https://deafhive.online/og.png">
@@ -38,7 +38,7 @@
   <!-- Favicon + apple-touch-icon: navy tile + yellow hexagon + 'D' (matches the brand hex motif).
        Inlined as a data: URI so there's no extra HTTP request. -->
   <link rel="icon" type="image/svg+xml" href="/favicon.svg">
-  <link rel="apple-touch-icon" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 
   <!-- Structured data: helps search engines and AI tools understand the site.
        Two linked entities: the Organization (DeafHive itself) and the WebSite
@@ -52,7 +52,13 @@
       "@id": "https://deafhive.online/#organization",
       "name": "DeafHive",
       "url": "https://deafhive.online/",
-      "description": "A central online space for the Deaf community, bringing together local events, BSL videos, services and support.",
+      "logo": {
+        "@type": "ImageObject",
+        "url": "https://deafhive.online/apple-touch-icon.png",
+        "width": 180,
+        "height": 180
+      },
+      "description": "A central online space for the Deaf community across the UK — bringing together local BSL events, sign-language videos, services and support all in one place.",
       "inLanguage": "en-GB",
       "knowsLanguage": ["en-GB", "sgn-GB"]
     },
@@ -71,6 +77,10 @@
 
   <link rel="preconnect" href="https://i.ytimg.com">
   <link rel="preconnect" href="https://www.youtube-nocookie.com">
+  <!-- The Worker API/media origin. The first data fetch is on the critical
+       render path; crossorigin matches app.js's CORS fetch so the warmed-up
+       connection is actually reused. -->
+  <link rel="preconnect" href="https://directory-proxy-v2.silent-term-d0e4.workers.dev" crossorigin>
 
   <!-- Raleway is self-hosted (see fonts.css) — no third-party font request, so
        the CSP keeps style-src/font-src at 'self'. Preload the latin body weight
@@ -82,7 +92,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="hex-bg">
-  <a class="skip-link" href="#about" data-scroll-target="#about">Skip to content</a>
+  <a class="skip-link" href="#main">Skip to content</a>
 
   <!-- Hex background: a single inline SVG pattern, tiled by the browser -->
   <div id="hex-layer" aria-hidden="true">
@@ -181,12 +191,13 @@
     </a>
   </nav>
 
+  <main id="main" tabindex="-1">
   <div class="page-wrap">
 
     <!-- HERO -->
     <div class="card hero-card" id="about">
       <div class="hero-text">
-        <h1>Welcome to<br>DeafHive</h1>
+        <h1>DeafHive &mdash; a home for<br>the Deaf community</h1>
         <p class="tagline">Information. Inspiration. Inclusion</p>
         <p>A central online space for the Deaf community, bringing together everything from local events to life-changing support.</p>
         <div class="hero-btns">
@@ -306,6 +317,7 @@
           <!--/PRERENDER:orgs-->
         </div>
       </section>
+      <a class="sec-viewall" href="/directory/">Browse the full directory of Deaf organisations <span aria-hidden="true">&rarr;</span></a>
     </div>
 
   </div><!-- /page-wrap -->
@@ -415,6 +427,9 @@
           <div class="event-view" id="event-view"></div>
         </div>
       </div>
+      <div class="event-viewall-row">
+        <a class="sec-viewall" href="/events/">See the full BSL events calendar <span aria-hidden="true">&rarr;</span></a>
+      </div>
     </div>
   </div>
 
@@ -485,6 +500,7 @@
     </div>
 
   </div><!-- /page-wrap -->
+  </main>
 
   <!-- ORGANISATION DETAIL MODAL -->
   <!-- Opened by JS when an organisation card is clicked. Populated with

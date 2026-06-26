@@ -92,10 +92,19 @@ function shell({ path, title, description, bodyClass, main, jsonld }) {
   <meta name="description" content="${esc(description)}">
   <link rel="canonical" href="${esc(canonical)}">
   <meta property="og:type" content="website">
+  <meta property="og:site_name" content="DeafHive">
   <meta property="og:title" content="${esc(title)}">
   <meta property="og:description" content="${esc(description)}">
   <meta property="og:url" content="${esc(canonical)}">
+  <meta property="og:locale" content="en_GB">
   <meta property="og:image" content="${SITE}/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="${esc(title)}">
+  <meta name="twitter:card" content="summary_large_image">
+  <!-- twitter:title/description intentionally omitted — X falls back to the
+       richer og:title/og:description above (mirrors the homepage decision). -->
+  <meta name="twitter:image" content="${SITE}/og.png">
   <link rel="preload" href="/fonts/raleway-latin.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/fonts.css">
   <style>
@@ -150,20 +159,36 @@ function buildDirectoryPage(orgs) {
     <h1>Deaf-community organisations directory</h1>
     <p class="lede">${sorted.length} Deaf-led and Deaf-serving organisations across the UK — services, support and community groups.</p>
 ${sorted.map(orgItemHtml).join('\n')}`;
-  const jsonld = JSON.stringify({
+  const itemList = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: 'DeafHive community directory',
     numberOfItems: sorted.length,
     itemListElement: sorted.map((o, i) => ({
       '@type': 'ListItem', position: i + 1,
-      item: { '@type': 'Organization', name: o.name, ...(httpsUrl(o.website) ? { url: httpsUrl(o.website) } : {}), ...(o.logo_url ? { logo: o.logo_url } : {}) },
+      item: {
+        '@type': 'Organization',
+        '@id': `${SITE}/directory/#org-${o.id}`,
+        name: o.name,
+        ...(o.about ? { description: plain(o.about, 300) } : {}),
+        ...(httpsUrl(o.website) ? { url: httpsUrl(o.website) } : {}),
+        ...(o.logo_url ? { logo: { '@type': 'ImageObject', url: o.logo_url } } : {}),
+      },
     })),
-  });
+  };
+  const breadcrumb = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE}/` },
+      { '@type': 'ListItem', position: 2, name: 'Directory', item: `${SITE}/directory/` },
+    ],
+  };
+  const jsonld = JSON.stringify([breadcrumb, itemList]);
   return shell({
     path: '/directory/',
     title: 'Directory of Deaf organisations — DeafHive',
-    description: 'Browse the DeafHive directory of Deaf-led and Deaf-serving organisations, services and community groups across the UK.',
+    description: 'Browse the DeafHive directory of Deaf-led and Deaf-serving organisations, services and community groups across the UK — find support and BSL services near you.',
     bodyClass: 'page-directory', main, jsonld,
   });
 }
@@ -188,20 +213,45 @@ function buildEventsPage(events, now) {
     <h2>Upcoming events</h2>
 ${(upcoming.length ? upcoming.map(eventItemHtml).join('\n') : '    <p class="item">No upcoming events listed right now.</p>')}
 ${past.length ? `    <h2 style="margin-top:40px">Past events</h2>\n${past.slice(0, 100).map(eventItemHtml).join('\n')}` : ''}`;
-  const jsonld = JSON.stringify({
+  const itemList = {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: 'DeafHive BSL events',
     numberOfItems: upcoming.length,
     itemListElement: upcoming.map((e, i) => ({
       '@type': 'ListItem', position: i + 1,
-      item: { '@type': 'Event', name: e.name, startDate: e.event_date, ...(e.organisation_name ? { organizer: { '@type': 'Organization', name: e.organisation_name } } : {}) },
+      item: {
+        '@type': 'Event',
+        name: e.name,
+        startDate: e.event_date,
+        eventStatus: 'https://schema.org/EventScheduled',
+        ...(e.details ? { description: plain(e.details, 300) } : {}),
+        // (The events table has no end-date column, so endDate is omitted.)
+        // Google Event rich results require a location. We only hold a freeform
+        // address string, so emit a Place (and mark the event in-person) only
+        // when it's present. Events without an address stay valid but plain —
+        // we don't fabricate an online/virtual location we can't substantiate.
+        ...(e.address ? {
+          eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+          location: { '@type': 'Place', name: e.address, address: e.address },
+        } : {}),
+        ...(e.organisation_name ? { organizer: { '@type': 'Organization', name: e.organisation_name } } : {}),
+      },
     })),
-  });
+  };
+  const breadcrumb = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      { '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE}/` },
+      { '@type': 'ListItem', position: 2, name: 'Events', item: `${SITE}/events/` },
+    ],
+  };
+  const jsonld = JSON.stringify([breadcrumb, itemList]);
   return shell({
     path: '/events/',
-    title: 'BSL events calendar — DeafHive',
-    description: 'Upcoming British Sign Language events, classes and community gatherings across the UK, listed on DeafHive.',
+    title: 'British Sign Language events & classes UK — DeafHive',
+    description: 'Upcoming British Sign Language (BSL) events, classes and community gatherings across the UK, listed on DeafHive — find events near you or online.',
     bodyClass: 'page-events', main, jsonld,
   });
 }
@@ -262,18 +312,24 @@ function homepageEventsFallback(events, now) {
   await writeFile(join(OUT, 'index.html'), home);
   console.log('  injected homepage fallbacks');
 
-  // Sitemap — add the generated pages to the BUILT artifact only, so the
-  // committed sitemap never references pages that don't exist yet.
+  // Sitemap — operate on the BUILT artifact only, so the committed sitemap
+  // never references pages that don't exist yet. Two jobs: keep the homepage
+  // lastmod fresh (it's rebuilt every run) and add the generated pages.
   try {
     const smPath = join(OUT, 'sitemap.xml');
     let sm = await readFile(smPath, 'utf8');
+    const today = new Date().toISOString().slice(0, 10);
+    // Refresh the homepage <lastmod> (the first <url>, the bare apex loc).
+    sm = sm.replace(
+      /(<loc>https:\/\/deafhive\.online\/<\/loc>[\s\S]*?<lastmod>)[^<]*(<\/lastmod>)/,
+      `$1${today}$2`,
+    );
     if (!sm.includes(`${SITE}/directory/`)) {
-      const today = new Date().toISOString().slice(0, 10);
       const entry = (p) => `  <url>\n    <loc>${SITE}${p}</loc>\n    <lastmod>${today}</lastmod>\n    <changefreq>daily</changefreq>\n    <priority>0.8</priority>\n  </url>\n`;
       sm = sm.replace('</urlset>', entry('/directory/') + entry('/events/') + '</urlset>');
-      await writeFile(smPath, sm);
-      console.log('  updated sitemap.xml');
     }
+    await writeFile(smPath, sm);
+    console.log('  updated sitemap.xml');
   } catch (e) { console.warn('  sitemap update skipped:', e.message); }
 
   console.log('done.');

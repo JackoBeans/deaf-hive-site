@@ -446,6 +446,12 @@ footer {
 }
 
 /* ── HERO ── */
+/* Skip-link lands here (index.html). tabindex=-1 makes the whole-page <main>
+   focusable; no visible outline on a non-interactive container, and
+   scroll-margin clears the sticky nav when the in-page #main jump fires. */
+#main:focus { outline: none; }
+#main { scroll-margin-top: 88px; }
+
 .hero-card {
   display: flex;
   align-items: center;
@@ -557,6 +563,32 @@ h2.sec-title {
   outline-offset: 2px;
 }
 .sec-submit-btn:active { transform: translateY(1px); }
+
+/* Quiet text link at the foot of the Directory / Events cards, pointing at the
+   dedicated /directory/ and /events/ pages. Those pages carry the full detail
+   (org descriptions + contacts, the complete chronological event list), so the
+   link is genuinely useful — and it gives crawlers a real <a href> path to them
+   instead of relying on sitemap-only discovery. */
+.sec-viewall {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 24px;
+  color: var(--navy);
+  font-weight: 700;
+  font-size: var(--text-md);
+  text-decoration: none;
+}
+.sec-viewall:hover { text-decoration: underline; }
+.sec-viewall:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+/* The Events card has zero padding (children pad themselves), so its view-all
+   link sits in a padded row that lines up with the rest of the card. */
+.event-viewall-row { padding: 8px 36px 32px; }
+.event-viewall-row .sec-viewall { margin-top: 0; }
 
 h2.sec-title-center {
   font-size: var(--text-2xl);
@@ -2080,6 +2112,7 @@ footer {
   .event-body { padding: 18px 16px 22px; }
   .events-card > .sec-title-row { padding: 28px 20px 0; }
   .events-card > #events-status { padding: 0 20px 22px; }
+  .event-viewall-row { padding: 8px 20px 24px; }
 }
 
 /* ── ACCESSIBLE FOCUS RING (WCAG 1.4.11 non-text contrast) ──────────────
