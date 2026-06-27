@@ -14,21 +14,41 @@
    (linked before this file), so they're declared once for the whole site.
    Only homepage-specific tokens remain here. */
 :root {
-  --blue-mid: #3f66c4;
-  --hex-line: rgba(148, 163, 184, 0.2);
-  --white:    #ffffff;
-  --text:     #1e293b;
-  --body:     #1e293b;
-  --teal:     #0d9488;
-  --teal-dk:  #0f766e;
+  --blue-mid:   #3f66c4;
+  --hex-line:   rgba(148, 163, 184, 0.2);
+  --white:      #ffffff;
+  --text:       #1e293b;
+  --body:       #1e293b;
+  --teal:       #0d9488;
+  --teal-dk:    #0f766e;
+  /* Mockup design tokens */
+  --paper:      #fffdf7;  /* cream card surface */
+  --mist-bg:    #f4f7ff;  /* light blue stat/chip surface */
+  --ink:        #111938;  /* near-black heading text */
+  --muted-text: #52607e;  /* body text on light */
+  --coral:      #ef6a5b;  /* build section accent */
+  --page-navy:  #1a3285;  /* page background fallback */
+  --card-shadow: 0 4px 6px rgba(0,0,0,0.04), 0 20px 48px rgba(18,29,79,0.18);
 }
 
 body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background-color: #f8fafc;
+  background-color: var(--page-navy);
   color: var(--body);
   overflow-x: hidden;
   scroll-behavior: smooth;
+}
+
+/* Fixed gradient backdrop — position:fixed pseudo-element is used instead of
+   background-attachment:fixed because the latter is broken on iOS Safari and
+   in headless screenshot renderers. Visual output is identical. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, #213ea4 0%, #2852b7 38%, #16317e 100%);
+  pointer-events: none;
 }
 
 /* Skip-to-content link for keyboard users */
@@ -82,12 +102,14 @@ body {
   vector-effect: non-scaling-stroke;
 }
 
-/* ── Hex background ── */
+/* ── Hex background: hide the SVG layer; dark gradient is on body ── */
+#hex-layer { display: none; }
+
 .hex-bg {
-  background-color: #f8fafc;
+  /* body already carries the gradient; this class is a no-op now */
 }
 
-/* ── NAV ── */
+/* ── NAV — frosted glass pill on dark page ── */
 nav {
   display: flex;
   align-items: center;
@@ -98,10 +120,12 @@ nav {
   position: sticky;
   top: 14px;
   z-index: 200;
-  background: rgba(255, 255, 255, 0.98);
-  border: 1px solid rgba(28, 45, 96, 0.12);
+  background: rgba(255, 253, 247, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 22px;
-  box-shadow: 0 12px 32px rgba(18, 34, 84, 0.10);
+  box-shadow: 0 14px 46px rgba(7, 16, 58, 0.22), 0 2px 8px rgba(0,0,0,0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   transition: transform 0.3s ease;
 }
 /* Auto-hide on scroll-down (app.js toggles .nav--hidden); reveals on scroll-up.
@@ -112,7 +136,7 @@ nav.nav--hidden { transform: translateY(-150%); }
 .logo {
   font-size: 1.9rem;
   font-weight: 800;
-  color: var(--text);
+  color: var(--navy);
   letter-spacing: -0.5px;
   text-decoration: none;
   position: relative;
@@ -159,29 +183,29 @@ nav.nav--hidden { transform: translateY(-150%); }
 .nav-links a {
   display: block;
   padding: 8px 20px;
-  border: 1.5px solid rgba(28, 45, 96, 0.32);
+  border: 1.5px solid rgba(18, 29, 79, 0.22);
   border-radius: 999px;
-  color: var(--text);
+  color: var(--muted-text);
   text-decoration: none;
   font-size: var(--text-md);
-  font-weight: 600;
-  background: rgba(255, 255, 255, 0.78);
+  font-weight: 700;
+  background: transparent;
   transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 
 .nav-links a:hover {
-  border-color: rgba(28, 45, 96, 0.48);
-  background: var(--navy);
-  color: var(--white);
+  border-color: var(--navy);
+  background: var(--mist-bg);
+  color: var(--navy);
 }
 
-/* ── CARD ── */
+/* ── CARD — cream floating panels on dark page ── */
 .card {
-  background: var(--white);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+  background: var(--paper);
+  border: none;
   border-radius: 20px;
   padding: 48px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--card-shadow);
   max-width: 1200px;
   margin: 0 auto 32px;
 }
@@ -466,24 +490,27 @@ footer {
 .hero-text h1 {
   font-size: var(--text-3xl);
   font-weight: 900;
-  color: var(--text);
-  line-height: 1.15;
-  margin-bottom: 12px;
-  letter-spacing: -0.025em;
+  color: var(--ink);
+  line-height: 1.06;
+  margin-bottom: 14px;
+  letter-spacing: -0.035em;
 }
 
 .hero-text .tagline {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--text);
-  margin-bottom: 14px;
+  font-size: var(--text-xs);
+  font-weight: 900;
+  color: var(--navy);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
 }
 
 .hero-text p {
   font-size: var(--text-md);
-  color: #444;
-  line-height: 1.6;
+  color: var(--muted-text);
+  line-height: 1.65;
   margin-bottom: 28px;
+  max-width: 38rem;
 }
 
 .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
@@ -523,15 +550,31 @@ footer {
 .hero-vid {
   width: 40%;
   aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+/* When wrapped in .hero-media, the vid takes full width of its column */
+.hero-media {
+  width: 40%;
+  display: grid;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.hero-media .hero-vid {
+  width: 100%;
+  transform: rotate(1.5deg);
+  box-shadow: 0 18px 48px rgba(18, 29, 79, 0.24);
 }
 
 /* ── SECTION HEADINGS ── */
 h2.sec-title {
   font-size: var(--text-2xl);
-  font-weight: 800;
-  color: var(--text);
+  font-weight: 900;
+  color: var(--ink);
   margin-bottom: 8px;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
 }
 
 /* Heading row — h2 + Submit CTA on one baseline. Wraps to two lines on
@@ -597,23 +640,24 @@ h2.sec-title {
 
 h2.sec-title-center {
   font-size: var(--text-2xl);
-  font-weight: 800;
-  color: var(--text);
+  font-weight: 900;
+  color: var(--ink);
   text-align: center;
   margin-bottom: 8px;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
 }
 
 p.sec-sub {
   font-size: var(--text-md);
-  color: #444;
-  line-height: 1.6;
+  color: var(--muted-text);
+  line-height: 1.65;
 }
 
 p.sec-sub-center {
   font-size: var(--text-md);
-  color: #444;
-  line-height: 1.6;
+  color: var(--muted-text);
+  line-height: 1.65;
   text-align: center;
 }
 
@@ -677,54 +721,55 @@ p.sec-sub-center {
 }
 
 .find-item {
-  background: #ffffff;
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  border-radius: 12px;
+  background: var(--mist-bg);
+  border: 1px solid rgba(18, 29, 79, 0.14);
+  box-shadow: none;
+  border-radius: 10px;
   padding: 18px 22px;
   display: flex;
   align-items: flex-start;
   gap: 10px;
   font-size: var(--text-md);
-  color: #1e293b;
+  color: var(--muted-text);
   line-height: 1.5;
 }
 
-.find-item::before { content: "•"; flex-shrink: 0; color: var(--text); font-weight: 700; line-height: 1; font-size: var(--text-lg); margin-top: 1px; }
-.find-item strong  { color: var(--text); display: block; margin-bottom: 2px; }
+.find-item::before { content: "•"; flex-shrink: 0; color: var(--navy); font-weight: 700; line-height: 1; font-size: var(--text-lg); margin-top: 1px; }
+.find-item strong  { color: var(--ink); display: block; margin-bottom: 2px; }
 
 /* ── BSL EVENTS SECTION ── */
 .archive-section {
   position: relative;
   z-index: 1;
-  padding: 40px 24px 32px;
+  padding: 0;
   margin: 0 24px 32px;
-  background: #0f172a;
-  border-radius: 24px;
-  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+  background: var(--paper);
+  border-radius: 20px;
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
 }
 
 .archive-section .events-card {
   background: transparent;
-  border-color: transparent;
+  border: none;
   box-shadow: none;
   margin-bottom: 0;
 }
 
 .archive-section h2.sec-title {
-  color: #ffffff;
+  color: var(--ink);
 }
 
 .archive-section .airtable-status {
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--muted-text);
 }
 
 .archive-section .event-viewall-row .sec-viewall {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--navy);
 }
 
 .archive-section .event-viewall-row .sec-viewall:hover {
-  color: #ffffff;
+  color: var(--navy-dk);
 }
 
 /* ── ROLE MODELS ── */
@@ -746,8 +791,8 @@ p.sec-sub-center {
 
 /* ── FOOTER ── */
 footer {
-  background: var(--white);
-  border-top: 1px solid #e2e8f0;
+  background: var(--paper);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
   padding: 48px 40px;
   text-align: center;
 }
@@ -772,8 +817,6 @@ footer {
   }
 
   .archive-section {
-    padding-left: 40px;
-    padding-right: 40px;
     margin-left: 40px;
     margin-right: 40px;
   }
@@ -2312,4 +2355,161 @@ footer {
   body { padding-bottom: calc(58px + env(safe-area-inset-bottom, 0px)); }
   /* Lift the back-to-top button above the tab bar. */
   .back-to-top { bottom: calc(58px + 16px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   MOCKUP DESIGN SYSTEM — new components for the dark-page redesign
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* ── Hero stat strip ── */
+.hero-stat-strip {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.hero-stat-strip span {
+  min-height: 5rem;
+  display: grid;
+  align-content: center;
+  padding: 12px 14px;
+  background: var(--mist-bg);
+  border: 1px solid rgba(18, 29, 79, 0.14);
+  border-radius: 10px;
+}
+
+.hero-stat-strip strong {
+  display: block;
+  color: var(--ink);
+  font-size: 1.45rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.hero-stat-label {
+  display: block;
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--muted-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 2px;
+}
+
+/* ── Story card: "Why We Created" — dark navy ── */
+.card--story {
+  background: #121d4f;
+  color: #e9eeff;
+}
+
+.card--story h2.sec-title {
+  color: #ffffff;
+}
+
+.card--story .sec-sub {
+  color: rgba(233, 238, 255, 0.78);
+}
+
+.card--story .two-col .col-text .sec-sub {
+  color: rgba(233, 238, 255, 0.78);
+}
+
+.card--story .find-item {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #e9eeff;
+}
+
+.card--story .find-item::before {
+  color: var(--yellow);
+}
+
+.card--story .find-item strong {
+  color: #ffffff;
+}
+
+.card--story .vid-box {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+/* ── Find card: "What You Will Find" — warm gradient tiles ── */
+.card--find .find-item {
+  background: linear-gradient(160deg, rgba(255, 244, 199, 0.7), rgba(244, 247, 255, 0.85));
+  border: 1px solid rgba(18, 29, 79, 0.12);
+}
+
+/* ── Build card: "Help Us Build" — deep navy + coral accent ── */
+.card--build {
+  background: linear-gradient(145deg, #0d1b5e 0%, #162c82 55%, #2d0f1a 100%);
+  color: #ffffff;
+}
+
+.card--build h2.sec-title {
+  color: #ffffff;
+}
+
+.card--build .sec-sub {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.card--build .two-col .col-text .sec-sub {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.card--build .bullet-list li {
+  color: rgba(255, 255, 255, 0.80);
+}
+
+.card--build .bullet-list li::before {
+  color: #ef6a5b;
+}
+
+.card--build .bullet-list li strong {
+  color: #ffffff;
+}
+
+.card--build .vid-box {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+/* ── Intro card value icons: numbered 01/02/03 circles ── */
+.card--intro .find-grid--stacked {
+  counter-reset: value-step;
+}
+
+.card--intro .find-item {
+  counter-increment: value-step;
+  align-items: center;
+}
+
+.card--intro .find-item::before {
+  content: "0" counter(value-step);
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  background: var(--yellow);
+  color: #111938;
+  border-radius: 50%;
+  font-size: 0.72rem;
+  font-weight: 900;
+  line-height: 34px;
+  text-align: center;
+  margin-top: 0;
+  font-size: 0.72rem;
+}
+
+/* ── Page-level bottom padding to clear tabbar on desktop ── */
+@media (min-width: 769px) {
+  main { padding-bottom: 40px; }
+}
+
+/* ── Mobile: hero media stacks naturally ── */
+@media (max-width: 768px) {
+  .hero-media { width: 100%; }
+  .hero-media .hero-vid { transform: none; }
+  .hero-stat-strip { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .hero-stat-strip span { min-height: 4rem; padding: 10px; }
+  .hero-stat-strip strong { font-size: 1.15rem; }
 }
