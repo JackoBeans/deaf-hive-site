@@ -1,0 +1,57 @@
+name: Build & deploy staging (Cloudflare Pages)
+
+# Mirrors the production build but deploys to Cloudflare Pages at
+# deafhive-staging.pages.dev instead of GitHub Pages / deafhive.online.
+# Search engines are blocked (X-Robots-Tag + robots.txt override).
+#
+# REQUIRES two GitHub Actions secrets (repo Settings → Secrets → Actions):
+#   CLOUDFLARE_API_TOKEN  — CF API token with "Cloudflare Pages: Edit" permission
+#   CLOUDFLARE_ACCOUNT_ID — your CF account ID (right sidebar on CF dashboard)
+
+on:
+  push:
+    branches: [design-staging]
+  workflow_dispatch:
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Assemble published site into _site
+        run: |
+          mkdir -p _site
+          rsync -a \
+            --exclude='.git' \
+            --exclude='.github' \
+            --exclude='.claude' \
+            --exclude='.gitignore' \
+            --exclude='worker' \
+            --exclude='worker-v2' \
+            --exclude='docs' \
+            --exclude='scripts' \
+            --exclude='_site' \
+            --exclude='*.md' \
+            ./ _site/
+
+      - name: Prerender directory + events (crawlable static HTML)
+        run: node scripts/prerender.mjs _site
+
+      - name: Block search indexing on staging
+        run: |
+          printf '/*\n  X-Robots-Tag: noindex, nofollow\n' > _site/_headers
+          printf 'User-agent: *\nDisallow: /\n' > _site/robots.txt
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/pages-action@v1
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          projectName: deafhive-staging
+          directory: _site
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
