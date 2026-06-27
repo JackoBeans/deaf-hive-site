@@ -47,8 +47,27 @@ body::before {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(180deg, #213ea4 0%, #2852b7 38%, #16317e 100%);
   pointer-events: none;
+  background:
+    linear-gradient(120deg, rgba(255,255,255,0.06) 25%, transparent 25%) 0 0 / 42px 42px,
+    linear-gradient(300deg, rgba(255,255,255,0.05) 25%, transparent 25%) 0 0 / 42px 42px,
+    linear-gradient(180deg, #213ea4 0%, #2852b7 38%, #16317e 100%);
+}
+
+/* White grid-line overlay with a top-to-transparent fade mask — adds
+   the subtle rule-grid visible in the upper portion of the page background. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(255,255,255,0.16) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.16) 1px, transparent 1px);
+  background-size: 84px 84px;
+  mask-image: linear-gradient(180deg, rgba(0,0,0,0.35), transparent 70%);
+  -webkit-mask-image: linear-gradient(180deg, rgba(0,0,0,0.35), transparent 70%);
 }
 
 /* Skip-to-content link for keyboard users */
@@ -114,15 +133,16 @@ nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   width: min(1200px, calc(100% - 48px));
   margin: 14px auto 0;
-  padding: 12px 18px;
+  padding: 0.72rem 1rem;
   position: sticky;
   top: 14px;
   z-index: 200;
   background: rgba(255, 253, 247, 0.94);
   border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 22px;
+  border-radius: 8px;
   box-shadow: 0 14px 46px rgba(7, 16, 58, 0.22), 0 2px 8px rgba(0,0,0,0.08);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -134,6 +154,9 @@ nav.nav--hidden { transform: translateY(-150%); }
 @media (prefers-reduced-motion: reduce) { nav { transition: none; } }
 
 .logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   font-size: 1.9rem;
   font-weight: 800;
   color: var(--navy);
@@ -141,6 +164,7 @@ nav.nav--hidden { transform: translateY(-150%); }
   text-decoration: none;
   position: relative;
   z-index: 1;
+  flex-shrink: 0;
 }
 
 .nav-links {
@@ -149,6 +173,7 @@ nav.nav--hidden { transform: translateY(-150%); }
   list-style: none;
   position: relative;
   z-index: 1;
+  justify-content: center;
 }
 
 .nav-toggle {
@@ -203,7 +228,7 @@ nav.nav--hidden { transform: translateY(-150%); }
 .card {
   background: var(--paper);
   border: none;
-  border-radius: 20px;
+  border-radius: 8px;
   padding: 48px;
   box-shadow: var(--card-shadow);
   max-width: 1200px;
@@ -231,7 +256,7 @@ footer {
 .vid-box {
   background: #2a2a2a;
   border: 1px solid #334155;
-  border-radius: 12px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -424,9 +449,8 @@ footer {
 
 /* ── Role-model cards ── */
 .role-models-people {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
   gap: 24px;
   margin-top: 36px;
 }
@@ -434,12 +458,10 @@ footer {
 .role-card {
   background: var(--white);
   border: 1px solid rgba(28, 45, 96, 0.10);
-  border-radius: 14px;
+  border-radius: 8px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  flex: 1 1 280px;
-  max-width: 500px;
 }
 
 .role-card-thumb {
@@ -480,29 +502,36 @@ footer {
 #main { scroll-margin-top: 88px; }
 
 .hero-card {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1.02fr) minmax(23rem, 0.82fr);
   align-items: center;
-  gap: 40px;
+  gap: clamp(1.5rem, 4vw, 4rem);
+  padding: clamp(2rem, 6vw, 5rem);
+  min-height: calc(100vh - 8rem);
+  position: relative;
+  overflow: hidden;
 }
 
-.hero-text { flex: 1; }
+.hero-text { min-width: 0; position: relative; z-index: 1; }
 
 .hero-text h1 {
-  font-size: var(--text-3xl);
+  font-size: clamp(3rem, 5.25vw, 4.85rem);
   font-weight: 900;
   color: var(--ink);
-  line-height: 1.06;
+  line-height: 0.96;
   margin-bottom: 14px;
   letter-spacing: -0.035em;
 }
 
-.hero-text .tagline {
-  font-size: var(--text-xs);
+.hero-text .tagline,
+.eyebrow {
+  font-size: 0.78rem;
   font-weight: 900;
-  color: var(--navy);
+  color: #162c82;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  margin-bottom: 12px;
+  margin-bottom: 0.75rem;
+  display: block;
 }
 
 .hero-text p {
@@ -516,50 +545,53 @@ footer {
 .hero-btns { display: flex; gap: 14px; flex-wrap: wrap; }
 
 .btn-yellow {
-  background: var(--teal);
+  background: var(--navy);
   color: #ffffff;
   border: none;
   padding: 12px 28px;
   border-radius: 8px;
-  font-weight: 700;
+  font-weight: 800;
   font-size: var(--text-md);
   cursor: pointer;
   text-decoration: none;
-  display: inline-block;
-  transition: background 0.2s;
+  display: inline-flex;
+  align-items: center;
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.2);
+  transition: background 0.2s, transform 0.1s;
 }
 
-.btn-yellow:hover { background: var(--teal-dk); }
+.btn-yellow:hover { background: var(--navy-dk); transform: translateY(-1px); }
 
 .btn-outline {
   background: transparent;
-  color: var(--text);
-  border: 2px solid var(--text);
+  color: var(--navy);
+  border: 2px solid var(--navy);
   padding: 12px 28px;
   border-radius: 8px;
-  font-weight: 700;
+  font-weight: 800;
   font-size: var(--text-md);
   cursor: pointer;
   text-decoration: none;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
   transition: background 0.2s, color 0.2s;
 }
 
-.btn-outline:hover { background: var(--text); color: var(--white); }
+.btn-outline:hover { background: var(--navy); color: var(--white); }
 
 .hero-vid {
   width: 40%;
   aspect-ratio: 16 / 9;
-  border-radius: 14px;
+  border-radius: 8px;
   overflow: hidden;
 }
 
 /* When wrapped in .hero-media, the vid takes full width of its column */
 .hero-media {
-  width: 40%;
   display: grid;
   gap: 12px;
-  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
 }
 .hero-media .hero-vid {
   width: 100%;
@@ -569,12 +601,12 @@ footer {
 
 /* ── SECTION HEADINGS ── */
 h2.sec-title {
-  font-size: var(--text-2xl);
+  font-size: clamp(2rem, 4vw, 4rem);
   font-weight: 900;
   color: var(--ink);
   margin-bottom: 8px;
   letter-spacing: -0.03em;
-  line-height: 1.08;
+  line-height: 0.98;
 }
 
 /* Heading row — h2 + Submit CTA on one baseline. Wraps to two lines on
@@ -587,6 +619,7 @@ h2.sec-title {
   flex-wrap: wrap;
 }
 .sec-title-row > .sec-title { margin-bottom: 0; }
+.sec-title-row > h2.sec-title { font-size: clamp(1.9rem, 3.6vw, 3.2rem); }
 
 /* Inline section CTA — small yellow pill (same palette as .btn-yellow).
    Used to send the visitor to /submit/* without leaving the directory or
@@ -639,13 +672,13 @@ h2.sec-title {
 .event-viewall-row .sec-viewall { margin-top: 0; }
 
 h2.sec-title-center {
-  font-size: var(--text-2xl);
+  font-size: clamp(2rem, 4vw, 4rem);
   font-weight: 900;
   color: var(--ink);
   text-align: center;
   margin-bottom: 8px;
   letter-spacing: -0.03em;
-  line-height: 1.08;
+  line-height: 0.98;
 }
 
 p.sec-sub {
@@ -744,7 +777,7 @@ p.sec-sub-center {
   padding: 0;
   margin: 0 24px 32px;
   background: var(--paper);
-  border-radius: 20px;
+  border-radius: 8px;
   box-shadow: var(--card-shadow);
   overflow: hidden;
 }
@@ -910,10 +943,13 @@ footer {
   }
 
   .card { padding: 28px 20px; }
-  .hero-card, .two-col { flex-direction: column; }
+  .two-col { flex-direction: column; }
+  .hero-card { grid-template-columns: 1fr; min-height: auto; }
   .hero-vid, .side-vid { width: 100% !important; }
-  .hero-text h1 { font-size: 2rem; }
+  .hero-text h1 { font-size: clamp(2.25rem, 8vw, 3rem); line-height: 1; }
   .find-grid { grid-template-columns: 1fr; }
+  .card--find .col-text .find-grid--stacked { grid-template-columns: 1fr; }
+  .role-models-people { grid-template-columns: 1fr; }
 }
 
 /* Respect users who prefer reduced motion */
@@ -2415,8 +2451,10 @@ footer {
 }
 
 .card--story .find-item {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 1rem 1.2rem;
   color: #e9eeff;
 }
 
@@ -2512,4 +2550,79 @@ footer {
   .hero-stat-strip { grid-template-columns: repeat(3, 1fr); gap: 8px; }
   .hero-stat-strip span { min-height: 4rem; padding: 10px; }
   .hero-stat-strip strong { font-size: 1.15rem; }
+}
+
+/* ── Nav brand mark (DH circle) ── */
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 2.55rem;
+  height: 2.55rem;
+  color: var(--paper);
+  font-size: 0.83rem;
+  font-weight: 900;
+  background: var(--navy);
+  border-radius: 50%;
+  box-shadow: inset 0 -5px 0 rgba(0, 0, 0, 0.18);
+  flex-shrink: 0;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+/* ── Nav CTA ("Get Involved" yellow button) ── */
+.nav-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.65rem 1.1rem;
+  color: var(--navy);
+  background: var(--yellow);
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: var(--text-md);
+  white-space: nowrap;
+  text-decoration: none;
+  box-shadow: inset 0 -4px 0 rgba(18, 29, 79, 0.14);
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+.nav-cta:hover { transform: translateY(-1px); }
+.nav-cta:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+  box-shadow: var(--focus-ring-halo);
+}
+@media (prefers-reduced-motion: reduce) { .nav-cta { transition: none; } }
+
+/* ── Hero card decorative corner element (yellow-soft peeking from bottom-right) ── */
+.hero-card::after {
+  content: '';
+  position: absolute;
+  right: -8rem;
+  bottom: -7rem;
+  width: 26rem;
+  height: 26rem;
+  background:
+    linear-gradient(60deg, transparent 48%, rgba(18, 29, 79, 0.08) 49% 51%, transparent 52%),
+    #fff4c7;
+  transform: rotate(10deg);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Find card: 2×2 item grid in the right column ── */
+.card--find .col-text .find-grid--stacked {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-top: 0;
+}
+
+.card--find .find-item {
+  min-height: 9rem;
+}
+
+/* ── Intro card: taller numbered items ── */
+.card--intro .find-item {
+  min-height: 4.5rem;
 }
