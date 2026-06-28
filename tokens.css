@@ -10,10 +10,17 @@
    the submit forms, so it is deliberately NOT shared here.
    ════════════════════════════════════════════════════════════════════════ */
 :root {
-  /* Brand palette */
-  --navy:      #2852b7;
-  --navy-dk:   #1f46aa;
-  --yellow:    #f5c842;
+  /* Brand palette.
+     Mockup token system: --navy is the DARK navy used for headings, the
+     wordmark, and the story/build panels; --blue is the MEDIUM blue used for
+     primary buttons, the brand-mark circle and focus borders. Earlier the
+     site conflated these (one --navy = #2852b7), which read too "blue". */
+  --navy:      #121d4f;   /* dark navy   — headings, wordmark, dark panels */
+  --blue:      #2852b7;   /* medium blue — primary buttons, brand-mark, focus */
+  --blue-deep: #162c82;   /* eyebrow / text-link */
+  --navy-dk:   #1f46aa;   /* primary-button hover */
+  --yellow:    #f2c94c;   /* mockup yellow (slightly warmer than old #f5c842) */
+  --yellow-soft: #fff4c7; /* faint yellow wash (hero corner, find cards) */
   --yellow-dk: #d4a800;
   --teal:      #0d9488;
   --teal-dk:   #0f766e;
