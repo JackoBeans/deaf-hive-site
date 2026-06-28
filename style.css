@@ -615,12 +615,12 @@ footer {
 
 /* ── SECTION HEADINGS ── */
 h2.sec-title {
-  font-size: clamp(2.3rem, 4.5vw, 4.5rem);
-  font-weight: 900;
-  color: var(--ink);
-  margin-bottom: 8px;
-  letter-spacing: -0.01em;
-  line-height: 0.96;
+  font-size: clamp(2rem, 4vw, 4rem);
+  font-weight: 950;
+  color: var(--navy);
+  margin-bottom: 0.8rem;
+  letter-spacing: 0;
+  line-height: 0.98;
 }
 
 /* Heading row — h2 + Submit CTA on one baseline. Wraps to two lines on
@@ -686,13 +686,13 @@ h2.sec-title {
 .event-viewall-row .sec-viewall { margin-top: 0; }
 
 h2.sec-title-center {
-  font-size: clamp(2.3rem, 4.5vw, 4.5rem);
-  font-weight: 900;
-  color: var(--ink);
+  font-size: clamp(2rem, 4vw, 4rem);
+  font-weight: 950;
+  color: var(--navy);
   text-align: center;
-  margin-bottom: 8px;
-  letter-spacing: -0.01em;
-  line-height: 0.96;
+  margin-bottom: 0.8rem;
+  letter-spacing: 0;
+  line-height: 0.98;
 }
 
 p.sec-sub {
@@ -910,53 +910,23 @@ footer {
 }
 
 /* ── RESPONSIVE ── */
+/* Mockup nav behaviour: the logo persists at every width; the centre links
+   drop at <=980 and the "Get Involved" CTA at <=680. The bottom tab bar (see
+   the .tabbar block below) is the section nav on phones — the mockup has no
+   mobile nav at all, but the live tab bar is a real feature, so it stays. */
+@media (max-width: 980px) {
+  nav { grid-template-columns: 1fr auto; }
+  .nav-links { display: none; }
+}
+
+@media (max-width: 680px) {
+  nav { top: 0.6rem; width: min(calc(100% - 1rem), 1180px); }
+  /* #site-nav prefix needed: the base .nav-cta rule is defined later in the
+     file, so an equal-specificity override here would lose the cascade. */
+  #site-nav .nav-cta { display: none; }
+}
+
 @media (max-width: 768px) {
-  nav {
-    display: flex;
-    width: calc(100% - 40px);
-    padding: 14px 18px;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-
-  .nav-toggle {
-    display: inline-flex;
-  }
-
-  .nav-links {
-    display: none;
-    width: 100%;
-    flex-direction: column;
-    gap: 10px;
-    padding-top: 4px;
-  }
-
-  nav.is-open .nav-links {
-    display: flex;
-  }
-
-  .nav-links li,
-  .nav-links a {
-    width: 100%;
-  }
-
-  .nav-links a {
-    text-align: center;
-  }
-
-  nav.is-open .nav-toggle-bar:nth-child(1) {
-    transform: translateY(6px) rotate(45deg);
-  }
-
-  nav.is-open .nav-toggle-bar:nth-child(2) {
-    opacity: 0;
-  }
-
-  nav.is-open .nav-toggle-bar:nth-child(3) {
-    transform: translateY(-6px) rotate(-45deg);
-  }
-
   .card { padding: 28px 20px; }
   .two-col { flex-direction: column; }
   .hero-card { grid-template-columns: 1fr; min-height: auto; }
@@ -2340,8 +2310,9 @@ footer {
    scroll to the page sections; app.js sets .is-active (scroll-spy). */
 .tabbar { display: none; }
 @media (max-width: 768px) {
-  /* The tab bar is the nav on phones — hide the top bar entirely. */
-  #site-nav { display: none; }
+  /* The tab bar is the section nav on phones. The top bar stays (logo only,
+     per the mockup) — it's sticky at the top while the tab bar sits fixed
+     at the bottom. */
 
   /* NOTE: .tabbar is a <nav>, so it inherits the floating top-nav "pill" rules
      (sticky, top:14px, width:calc, margin:auto, padding, flex-wrap, gap, border,
@@ -2642,7 +2613,23 @@ footer {
 }
 
 .card--find .find-item {
-  min-height: 9rem;
+  min-height: 12rem;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 0.55rem;
+  font-size: 1.02rem;
+  line-height: 1.7;
+  color: #52607e;
+}
+/* Live items are inline "<strong>Title</strong> – desc"; the mockup splits
+   them into h3 + p. No bullet on these cards (mockup has none). */
+.card--find .find-item::before { content: none; }
+.card--find .find-item strong {
+  display: block;
+  color: var(--navy);
+  font-size: 1.12rem;
+  font-weight: 900;
+  line-height: 1.18;
 }
 
 /* ── Intro card: taller numbered items ── */
@@ -2668,16 +2655,31 @@ footer {
     gap: 0.9rem;
     min-height: 8.5rem;
   }
+}
 
-  /* "What You Will Find" — video on top, 4 cards in a full-width row below */
-  .card--find .two-col {
-    flex-direction: column;
-    align-items: stretch;
+/* "What You Will Find": keep the BSL video on top, lay the 4 cards in a row
+   below — 4-up on desktop, 2-up on tablet, 1-up on phones (mockup grid). */
+.card--find .two-col {
+  flex-direction: column;
+  align-items: stretch;
+}
+.card--find .side-vid {
+  width: min(40%, 28rem);
+}
+@media (min-width: 681px) {
+  .card--find .col-text .find-grid--stacked {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .card--find .side-vid {
-    width: min(40%, 28rem);
-  }
+}
+@media (min-width: 981px) {
   .card--find .col-text .find-grid--stacked {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
+}
+
+/* ── Phones: softer card corners + smaller section headings (mockup ≤680) ── */
+@media (max-width: 680px) {
+  .card { border-radius: 12px; }
+  h2.sec-title,
+  h2.sec-title-center { font-size: clamp(1.85rem, 9vw, 3rem); }
 }
