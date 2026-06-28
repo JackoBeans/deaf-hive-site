@@ -2620,10 +2620,11 @@ footer {
   z-index: 0;
 }
 
-/* ── Find card: 2×2 item grid in the right column ── */
+/* ── Find card: item grid. Single column is the mobile-safe base; desktop
+   promotes it to a 4-up row in the min-width:769px block near the file end. ── */
 .card--find .col-text .find-grid--stacked {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 14px;
   margin-top: 0;
 }
@@ -2635,4 +2636,36 @@ footer {
 /* ── Intro card: taller numbered items ── */
 .card--intro .find-item {
   min-height: 4.5rem;
+}
+
+/* ── Desktop: mockup-style card grids for the value/find sections ──
+   The BSL videos and all copy stay put. On desktop the intro value items
+   become a 3-up row of tall cards (number circle on top), and the
+   "What You Will Find" items become a 4-up row beneath their video — matching
+   the mockup's card layout. Mobile keeps the single-column stack above. */
+@media (min-width: 769px) {
+  /* Intro "What is DeafHive?" — 3 tall value cards, number stacked on top */
+  .card--intro .find-grid--stacked {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-top: 0;
+  }
+  .card--intro .find-item {
+    flex-direction: column;
+    gap: 0.9rem;
+    min-height: 8.5rem;
+  }
+
+  /* "What You Will Find" — video on top, 4 cards in a full-width row below */
+  .card--find .two-col {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .card--find .side-vid {
+    width: min(40%, 28rem);
+  }
+  .card--find .col-text .find-grid--stacked {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
