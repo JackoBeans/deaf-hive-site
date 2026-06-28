@@ -32,7 +32,7 @@
 }
 
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Raleway', "Avenir Next", "Inter", system-ui, sans-serif;
   background-color: var(--page-navy);
   color: var(--body);
   overflow-x: hidden;
@@ -206,20 +206,21 @@ nav.nav--hidden { transform: translateY(-150%); }
 }
 
 .nav-links a {
-  display: block;
-  padding: 8px 20px;
-  border: 1.5px solid rgba(18, 29, 79, 0.22);
-  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.72rem 1rem;
+  border-radius: 8px;
   color: var(--muted-text);
   text-decoration: none;
   font-size: var(--text-md);
-  font-weight: 700;
+  font-weight: 800;
   background: transparent;
-  transition: background 0.2s, color 0.2s, border-color 0.2s;
+  transition: background 0.2s, color 0.2s;
 }
 
 .nav-links a:hover {
-  border-color: var(--navy);
   background: var(--mist-bg);
   color: var(--navy);
 }
