@@ -14,7 +14,6 @@
    (linked before this file), so they're declared once for the whole site.
    Only homepage-specific tokens remain here. */
 :root {
-  --blue-mid:   #3f66c4;
   --hex-line:   rgba(148, 163, 184, 0.2);
   --white:      #ffffff;
   --text:       #1e293b;
@@ -96,37 +95,6 @@ body::after {
   pointer-events: none;
 }
 
-/* ── Slanted hex background layer ── */
-#hex-layer {
-  position: fixed;
-  inset: -12vmax;
-  z-index: -1;
-  overflow: hidden;
-  transform: rotate(-8deg) scale(1.08);
-  transform-origin: center;
-  pointer-events: none;
-}
-
-#hex-layer svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-
-#hex-layer polygon {
-  fill: none;
-  stroke: var(--hex-line);
-  stroke-width: 2.2;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-}
-
-/* ── Hex background: hide the SVG layer; dark gradient is on body ── */
-#hex-layer { display: none; }
-
-.hex-bg {
-  /* body already carries the gradient; this class is a no-op now */
-}
 
 /* ── NAV — frosted glass pill on dark page ── */
 nav {
@@ -160,7 +128,6 @@ nav.nav--hidden { transform: translateY(-150%); }
   font-size: clamp(1.25rem, 2vw, 1.75rem);
   font-weight: 900;
   color: var(--navy);
-  letter-spacing: 0;
   text-decoration: none;
   position: relative;
   z-index: 1;
@@ -178,34 +145,6 @@ nav.nav--hidden { transform: translateY(-150%); }
   flex-wrap: wrap;
 }
 
-.nav-toggle {
-  display: none;
-  width: 48px;
-  height: 48px;
-  padding: 0;
-  border: 1.5px solid rgba(28, 45, 96, 0.22);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.98);
-  color: var(--text);
-  cursor: pointer;
-  align-items: center;
-  justify-content: center;
-}
-
-.nav-toggle-bar {
-  display: block;
-  width: 20px;
-  height: 2px;
-  background: currentColor;
-  border-radius: 999px;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-}
-
-.nav-toggle-icon {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
 
 .nav-links a {
   display: inline-flex;
@@ -525,8 +464,7 @@ footer {
   color: var(--navy);
   font-size: clamp(3rem, 5.25vw, 4.85rem);
   line-height: 0.96;
-  font-weight: 950;
-  letter-spacing: 0;
+  font-weight: 900;
 }
 
 @media (max-width: 980px) {
@@ -541,7 +479,7 @@ footer {
 .eyebrow {
   font-size: 0.78rem;
   font-weight: 900;
-  color: #162c82;
+  color: var(--blue-deep);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin-bottom: 0.75rem;
@@ -594,7 +532,6 @@ footer {
 .btn-outline:hover { background: var(--navy); color: var(--white); }
 
 .hero-vid {
-  width: 40%;
   aspect-ratio: 16 / 9;
   border-radius: 8px;
   overflow: hidden;
@@ -616,10 +553,9 @@ footer {
 /* ── SECTION HEADINGS ── */
 h2.sec-title {
   font-size: clamp(2rem, 4vw, 4rem);
-  font-weight: 950;
+  font-weight: 900;
   color: var(--navy);
   margin-bottom: 0.8rem;
-  letter-spacing: 0;
   line-height: 0.98;
 }
 
@@ -690,11 +626,10 @@ h2.sec-title {
 
 h2.sec-title-center {
   font-size: clamp(2rem, 4vw, 4rem);
-  font-weight: 950;
+  font-weight: 900;
   color: var(--navy);
   text-align: center;
   margin-bottom: 0.8rem;
-  letter-spacing: 0;
   line-height: 0.98;
 }
 
@@ -814,10 +749,6 @@ p.sec-sub-center {
   color: var(--muted-text);
 }
 
-.archive-section .event-viewall-row .sec-viewall {
-  color: var(--navy);
-}
-
 .archive-section .event-viewall-row .sec-viewall:hover {
   color: var(--navy-dk);
 }
@@ -934,8 +865,6 @@ footer {
   .two-col { flex-direction: column; }
   .hero-card { grid-template-columns: 1fr; min-height: auto; }
   .hero-vid, .side-vid { width: 100% !important; }
-  .find-grid { grid-template-columns: 1fr; }
-  .card--find .col-text .find-grid--stacked { grid-template-columns: 1fr; }
   .role-models-people { grid-template-columns: 1fr; }
 }
 
@@ -943,14 +872,9 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   body { scroll-behavior: auto; }
 
-  #hex-layer {
-    transform: none;
-  }
-
   .skip-link,
   .video-facade img,
   .video-facade-play svg,
-  .nav-toggle-bar,
   .video-modal-close {
     transition: none;
   }
@@ -1015,7 +939,7 @@ footer {
 
 .airtable-filter-label {
   font-size: 0.76rem;
-  font-weight: 950;
+  font-weight: 900;
   color: var(--navy);
   margin-right: 4px;
   text-transform: uppercase;
@@ -1049,7 +973,7 @@ footer {
 }
 .airtable-chip[aria-pressed="true"] {
   background: var(--yellow);
-  color: #121d4f;
+  color: var(--navy);
   border-color: var(--yellow);
   box-shadow: inset 0 -3px 0 rgba(18, 29, 79, 0.14);
 }
@@ -2421,13 +2345,12 @@ footer {
   font-weight: 500;
   color: var(--muted-text);
   text-transform: none;
-  letter-spacing: 0;
   margin-top: 2px;
 }
 
 /* ── Story card: "Why We Created" — dark navy ── */
 .card--story {
-  background: #121d4f;
+  background: var(--navy);
   color: #e9eeff;
 }
 
@@ -2436,10 +2359,6 @@ footer {
 }
 
 .card--story .sec-sub {
-  color: rgba(233, 238, 255, 0.78);
-}
-
-.card--story .two-col .col-text .sec-sub {
   color: rgba(233, 238, 255, 0.78);
 }
 
@@ -2475,7 +2394,7 @@ footer {
 
 /* ── Build card: "Help Us Build" — deep navy + coral accent ── */
 .card--build {
-  background: linear-gradient(135deg, rgba(239, 106, 91, 0.14), transparent 46%), #121d4f;
+  background: linear-gradient(135deg, rgba(239, 106, 91, 0.14), transparent 46%), var(--navy);
   color: #ffffff;
 }
 
@@ -2487,16 +2406,12 @@ footer {
   color: #e9eeff;
 }
 
-.card--build .two-col .col-text .sec-sub {
-  color: #e9eeff;
-}
-
 .card--build .bullet-list li {
   color: rgba(255, 255, 255, 0.80);
 }
 
 .card--build .bullet-list li::before {
-  color: #ef6a5b;
+  color: var(--coral);
 }
 
 .card--build .bullet-list li strong {
@@ -2543,7 +2458,7 @@ footer {
 @media (max-width: 768px) {
   .hero-media { width: 100%; }
   .hero-media .hero-vid { transform: none; }
-  .hero-stat-strip { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .hero-stat-strip { gap: 8px; }
   .hero-stat-strip > span { min-height: 4rem; padding: 10px; }
   .hero-stat-strip strong { font-size: 1.15rem; }
 }
@@ -2562,7 +2477,6 @@ footer {
   box-shadow: inset 0 -5px 0 rgba(0, 0, 0, 0.18);
   flex-shrink: 0;
   line-height: 1;
-  letter-spacing: 0;
 }
 
 /* ── Nav CTA ("Get Involved" yellow button) ── */
