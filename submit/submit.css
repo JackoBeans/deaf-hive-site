@@ -249,7 +249,7 @@ fieldset.field > legend {
   align-items: center;
   padding: 6px 14px;
   /* 0.55 alpha ≈ 3.35:1 on white (WCAG 1.4.11) — same as .airtable-chip. */
-  border: 1.5px solid rgba(28, 45, 96, 0.55);
+  border: 1.5px solid rgba(18, 29, 79, 0.55);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.78);
   color: var(--navy);
@@ -260,7 +260,7 @@ fieldset.field > legend {
   user-select: none;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.chip:hover { border-color: rgba(28, 45, 96, 0.78); }
+.chip:hover { border-color: rgba(18, 29, 79, 0.78); }
 .chip:focus-within {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: 2px;

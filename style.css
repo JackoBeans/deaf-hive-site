@@ -551,7 +551,7 @@ footer {
 }
 
 /* ── SECTION HEADINGS ── */
-h2.sec-title {
+.sec-title {
   font-size: clamp(2rem, 4vw, 4rem);
   font-weight: 900;
   color: var(--navy);
@@ -568,8 +568,7 @@ h2.sec-title {
   gap: 16px;
   flex-wrap: wrap;
 }
-.sec-title-row > .sec-title { margin-bottom: 0; }
-.sec-title-row > h2.sec-title { font-size: clamp(1.9rem, 3.6vw, 3.2rem); }
+.sec-title-row > .sec-title { margin-bottom: 0; font-size: clamp(1.9rem, 3.6vw, 3.2rem); }
 
 /* Inline section CTA — small yellow pill (same palette as .btn-yellow).
    Used to send the visitor to /submit/* without leaving the directory or
@@ -624,7 +623,7 @@ h2.sec-title {
 .event-viewall-row { padding: 8px 36px 32px; }
 .event-viewall-row .sec-viewall { margin-top: 0; }
 
-h2.sec-title-center {
+.sec-title-center {
   font-size: clamp(2rem, 4vw, 4rem);
   font-weight: 900;
   color: var(--navy);
@@ -741,7 +740,7 @@ p.sec-sub-center {
   margin-bottom: 0;
 }
 
-.archive-section h2.sec-title {
+.archive-section .sec-title {
   color: var(--ink);
 }
 
@@ -843,6 +842,31 @@ footer {
   margin: 0 auto 10px;
 }
 
+/* ── Nav CTA ("Get Involved" yellow button) ── */
+.nav-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.72rem 1rem;
+  color: var(--navy);
+  background: var(--yellow);
+  border-radius: 8px;
+  font-weight: 800;
+  font-size: var(--text-md);
+  white-space: nowrap;
+  text-decoration: none;
+  box-shadow: inset 0 -4px 0 rgba(18, 29, 79, 0.14);
+  transition: transform 0.15s ease;
+  flex-shrink: 0;
+}
+.nav-cta:hover { transform: translateY(-1px); }
+.nav-cta:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: 2px;
+  box-shadow: var(--focus-ring-halo);
+}
+
 /* ── RESPONSIVE ── */
 /* Mockup nav behaviour: the logo persists at every width; the centre links
    drop at <=980 and the "Get Involved" CTA at <=680. The bottom tab bar (see
@@ -855,16 +879,14 @@ footer {
 
 @media (max-width: 680px) {
   nav { top: 0.6rem; width: min(calc(100% - 1rem), 1180px); }
-  /* #site-nav prefix needed: the base .nav-cta rule is defined later in the
-     file, so an equal-specificity override here would lose the cascade. */
-  #site-nav .nav-cta { display: none; }
+  .nav-cta { display: none; }
 }
 
 @media (max-width: 768px) {
   .card { padding: 28px 20px; }
   .two-col { flex-direction: column; }
   .hero-card { grid-template-columns: 1fr; min-height: auto; }
-  .hero-vid, .side-vid { width: 100% !important; }
+  .hero-media .hero-vid, .card--find .side-vid, .card--story .side-vid { width: 100%; }
   .role-models-people { grid-template-columns: 1fr; }
 }
 
@@ -873,6 +895,7 @@ footer {
   body { scroll-behavior: auto; }
 
   .skip-link,
+  .nav-cta,
   .video-facade img,
   .video-facade-play svg,
   .video-modal-close {
@@ -966,7 +989,7 @@ footer {
   cursor: pointer;
   transition: background 0.15s, color 0.15s, border-color 0.15s;
 }
-.airtable-chip:hover { border-color: rgba(28, 45, 96, 0.78); }
+.airtable-chip:hover { border-color: rgba(18, 29, 79, 0.78); }
 .airtable-chip:focus-visible {
   outline: 2px solid var(--yellow);
   outline-offset: 2px;
@@ -1008,7 +1031,7 @@ footer {
 .filters-active-chip:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
 .filters-active-x { font-size: 1.15em; line-height: 1; }
 
-@media (max-width: 768px) {
+@media (max-width: 980px) {
   .filters-toggle {
     display: inline-flex;
     align-items: center;
@@ -1016,7 +1039,7 @@ footer {
     align-self: flex-start;
     min-height: 44px;
     padding: 8px 16px;
-    border: 1.5px solid rgba(28, 45, 96, 0.55);
+    border: 1.5px solid rgba(18, 29, 79, 0.55);
     border-radius: 999px;
     background: rgba(255, 255, 255, 0.78);
     color: var(--text);
@@ -1025,7 +1048,7 @@ footer {
     font-weight: 700;
     cursor: pointer;
   }
-  .filters-toggle:hover { border-color: rgba(28, 45, 96, 0.78); }
+  .filters-toggle:hover { border-color: rgba(18, 29, 79, 0.78); }
   .filters-toggle:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
   .filters-toggle-badge {
     display: inline-grid;
@@ -1235,7 +1258,7 @@ footer {
   height: 36px;
   padding: 0;
   background: transparent;
-  border: 1.5px solid rgba(28, 45, 96, 0.18);
+  border: 1.5px solid rgba(18, 29, 79, 0.18);
   border-radius: 999px;
   color: var(--text);
   font-size: 22px;
@@ -1282,7 +1305,7 @@ footer {
 
 .org-modal-logo-box {
   background: var(--white);
-  border: 1px solid rgba(28, 45, 96, 0.10);
+  border: 1px solid rgba(18, 29, 79, 0.10);
   border-radius: 14px;
   aspect-ratio: 1;
   display: flex;
@@ -1305,7 +1328,7 @@ footer {
 
 .org-modal-contact-box {
   background: var(--white);
-  border: 1px solid rgba(28, 45, 96, 0.10);
+  border: 1px solid rgba(18, 29, 79, 0.10);
   border-radius: 14px;
   padding: 18px;
   display: flex;
@@ -1378,7 +1401,7 @@ footer {
   display: inline-flex;
   align-items: center;
   padding: 5px 14px;
-  border: 1.5px solid rgba(28, 45, 96, 0.28);
+  border: 1.5px solid rgba(18, 29, 79, 0.28);
   border-radius: 999px;
   background: rgba(255, 255, 255, 0.78);
   color: var(--text);
@@ -2234,10 +2257,10 @@ footer {
 }
 
 /* ── Mobile bottom tab bar ───────────────────────────────────────────────
-   Shown only on phones (≤768px), where it REPLACES the top nav. The four tabs
-   scroll to the page sections; app.js sets .is-active (scroll-spy). */
+   Shown on narrow viewports (≤980px), where it REPLACES the top nav links.
+   The four tabs scroll to the page sections; app.js sets .is-active (scroll-spy). */
 .tabbar { display: none; }
-@media (max-width: 768px) {
+@media (max-width: 980px) {
   /* The tab bar is the section nav on phones. The top bar stays (logo only,
      per the mockup) — it's sticky at the top while the tab bar sits fixed
      at the bottom. */
@@ -2264,7 +2287,7 @@ footer {
        @supports block below goes more transparent once a blur is available. */
     background: rgba(255, 255, 255, 0.86);
     border: 0;                /* reset base nav border + border-radius (the pill) */
-    border-top: 1px solid rgba(28, 45, 96, 0.12);
+    border-top: 1px solid rgba(18, 29, 79, 0.12);
     border-radius: 0;
     box-shadow: 0 -4px 16px rgba(18, 34, 84, 0.10);
   }
@@ -2354,7 +2377,7 @@ footer {
   color: #e9eeff;
 }
 
-.card--story h2.sec-title {
+.card--story .sec-title {
   color: #fffdf7;
 }
 
@@ -2398,7 +2421,7 @@ footer {
   color: #ffffff;
 }
 
-.card--build h2.sec-title {
+.card--build .sec-title {
   color: #ffffff;
 }
 
@@ -2450,7 +2473,7 @@ footer {
 }
 
 /* ── Page-level bottom padding to clear tabbar on desktop ── */
-@media (min-width: 769px) {
+@media (min-width: 981px) {
   main { padding-bottom: 40px; }
 }
 
@@ -2478,32 +2501,6 @@ footer {
   flex-shrink: 0;
   line-height: 1;
 }
-
-/* ── Nav CTA ("Get Involved" yellow button) ── */
-.nav-cta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 2.75rem;
-  padding: 0.72rem 1rem;
-  color: var(--navy);
-  background: var(--yellow);
-  border-radius: 8px;
-  font-weight: 800;
-  font-size: var(--text-md);
-  white-space: nowrap;
-  text-decoration: none;
-  box-shadow: inset 0 -4px 0 rgba(18, 29, 79, 0.14);
-  transition: transform 0.15s ease;
-  flex-shrink: 0;
-}
-.nav-cta:hover { transform: translateY(-1px); }
-.nav-cta:focus-visible {
-  outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: 2px;
-  box-shadow: var(--focus-ring-halo);
-}
-@media (prefers-reduced-motion: reduce) { .nav-cta { transition: none; } }
 
 /* ── Hero card decorative corner element (yellow-soft peeking from bottom-right) ── */
 .hero-card::after {
@@ -2598,8 +2595,8 @@ footer {
 /* ── Phones: softer card corners + smaller section headings (mockup ≤680) ── */
 @media (max-width: 680px) {
   .card { border-radius: 12px; }
-  h2.sec-title,
-  h2.sec-title-center { font-size: clamp(1.85rem, 9vw, 3rem); }
+  .sec-title,
+  .sec-title-center { font-size: clamp(1.85rem, 9vw, 3rem); }
 
   /* Directory: heading row stacks; filter chips stretch full-width (mockup) */
   .sec-title-row { flex-direction: column; align-items: stretch; }
